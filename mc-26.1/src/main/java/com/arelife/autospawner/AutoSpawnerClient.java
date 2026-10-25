@@ -196,7 +196,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 				e != player
 						&& !(e instanceof Player)
 						&& e.isAlive()
-						&& cfg.mobs.contains(BuiltInBuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).toString())
+						&& cfg.mobs.contains(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).toString())
 						&& player.distanceTo(e) <= cfg.searchRange);
 		return list.stream().min(Comparator.comparingDouble(player::distanceToSqr)).orElse(null);
 	}
@@ -229,7 +229,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		Config cfg = Config.get();
 		for (int slot : FOOD_SLOTS) {
 			var stack = player.getInventory().getItem(slot);
-			if (!stack.isEmpty() && cfg.foods.contains(BuiltInBuiltInRegistries.ITEM.getKey(stack.getItem()).toString())) {
+			if (!stack.isEmpty() && cfg.foods.contains(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString())) {
 				return slot;
 			}
 		}
@@ -243,7 +243,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		int total = 0;
 		for (int slot : FOOD_SLOTS) {
 			var stack = client.player.getInventory().getItem(slot);
-			if (!stack.isEmpty() && cfg.foods.contains(BuiltInBuiltInRegistries.ITEM.getKey(stack.getItem()).toString())) total += stack.getCount();
+			if (!stack.isEmpty() && cfg.foods.contains(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString())) total += stack.getCount();
 		}
 		return total;
 	}

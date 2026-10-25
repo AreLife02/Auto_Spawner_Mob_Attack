@@ -1,6 +1,6 @@
 package com.arelife.autospawner;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -87,15 +87,15 @@ public class MenuScreen extends Screen {
 		String q = search.toLowerCase();
 		List<EntityType<?>> out = new ArrayList<>();
 		for (EntityType<?> t : allMobs()) {
-			String id = BuiltInBuiltInRegistries.ENTITY_TYPE.getKey(t).toString();
+			String id = BuiltInRegistries.ENTITY_TYPE.getKey(t).toString();
 			if (q.isEmpty() || nameOf(t).toLowerCase().contains(q) || id.contains(q)) {
 				out.add(t);
 			}
 		}
 		// Seçililer üstte
 		Config cfg = Config.get();
-		out.sort(Comparator.comparing((EntityType<?> t) -> !cfg.mobs.contains(BuiltInBuiltInRegistries.ENTITY_TYPE.getKey(t).toString()))
-				.thenComparingInt(t -> MOB_PRIORITY.indexOf(BuiltInBuiltInRegistries.ENTITY_TYPE.getKey(t).getPath()) < 0 ? 1000 : MOB_PRIORITY.indexOf(BuiltInBuiltInRegistries.ENTITY_TYPE.getKey(t).getPath())));
+		out.sort(Comparator.comparing((EntityType<?> t) -> !cfg.mobs.contains(BuiltInRegistries.ENTITY_TYPE.getKey(t).toString()))
+				.thenComparingInt(t -> MOB_PRIORITY.indexOf(BuiltInRegistries.ENTITY_TYPE.getKey(t).getPath()) < 0 ? 1000 : MOB_PRIORITY.indexOf(BuiltInRegistries.ENTITY_TYPE.getKey(t).getPath())));
 		return out;
 	}
 
@@ -103,13 +103,13 @@ public class MenuScreen extends Screen {
 		String q = search.toLowerCase();
 		List<Item> out = new ArrayList<>();
 		for (Item t : FoodList.all()) {
-			String id = BuiltInBuiltInRegistries.ITEM.getKey(t).toString();
+			String id = BuiltInRegistries.ITEM.getKey(t).toString();
 			if (q.isEmpty() || nameOf(t).toLowerCase().contains(q) || id.contains(q)) {
 				out.add(t);
 			}
 		}
 		Config cfg = Config.get();
-		out.sort(Comparator.comparing((Item t) -> !cfg.foods.contains(BuiltInBuiltInRegistries.ITEM.getKey(t).toString())));
+		out.sort(Comparator.comparing((Item t) -> !cfg.foods.contains(BuiltInRegistries.ITEM.getKey(t).toString())));
 		return out;
 	}
 
@@ -132,12 +132,12 @@ public class MenuScreen extends Screen {
 	// ------------------------------------------------------------ çizim
 
 	@Override
-	public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+	public void extractRenderState(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
 		ctx.fill(0, 0, width, height, 0x90000000);
 		ctx.fill(px - 1, py - 1, px + W + 1, py + H + 1, ACCENT);
 		ctx.fill(px, py, px + W, py + H, PANEL);
 
-		ctx.drawString(font, "AUTO SPAWNER MOB ATTACK", px + 10, py + 8, ACCENT, true);
+		ctx.text(font, "AUTO SPAWNER MOB ATTACK", px + 10, py + 8, ACCENT, true);
 
 		String[] tabs = {"Mobs", "Foods", "Settings", "Status"};
 		int tabW = (W - 20) / 4;
@@ -146,7 +146,7 @@ public class MenuScreen extends Screen {
 			int ty = py + 24;
 			boolean hover = inside(mouseX, mouseY, tx, ty, tabW - 4, 20);
 			ctx.fill(tx, ty, tx + tabW - 4, ty + 20, i == tab ? ACCENT : (hover ? HOVER : PANEL_LIGHT));
-			ctx.drawString(font, tabs[i], tx + (tabW - 4) / 2 - font.width(tabs[i]) / 2, ty + 6, i == tab ? 0xFF111111 : TEXT, false);
+			ctx.text(font, tabs[i], tx + (tabW - 4) / 2 - font.width(tabs[i]) / 2, ty + 6, i == tab ? 0xFF111111 : TEXT, false);
 		}
 
 		switch (tab) {
@@ -156,16 +156,16 @@ public class MenuScreen extends Screen {
 			default -> renderStatus(ctx, mouseX, mouseY);
 		}
 
-		ctx.drawString(font, "F10: toggle   K: menu   ESC: close", px + 10, py + H - 14, TEXT_DIM, false);
+		ctx.text(font, "F10: toggle   K: menu   ESC: close", px + 10, py + H - 14, TEXT_DIM, false);
 	}
 
-	private void renderMobs(GuiGraphics ctx, int mx, int my) {
+	private void renderMobs(GuiGraphicsExtractor ctx, int mx, int my) {
 		Config cfg = Config.get();
 		int sx = px + 10, sy = py + 50;
 		ctx.fill(sx, sy, px + W - 10, sy + 20, PANEL_LIGHT);
-		ctx.renderOutline(sx, sy, W - 20, 20, ACCENT_DIM);
+		ctx.outline(sx, sy, W - 20, 20, ACCENT_DIM);
 		String shown = search.isEmpty() ? "Search... (type to search)" : search + (System.currentTimeMillis() / 500 % 2 == 0 ? "_" : "");
-		ctx.drawString(font, shown, sx + 6, sy + 6, search.isEmpty() ? TEXT_DIM : TEXT, false);
+		ctx.text(font, shown, sx + 6, sy + 6, search.isEmpty() ? TEXT_DIM : TEXT, false);
 
 		List<EntityType<?>> list = filteredMobs();
 		int rows = visibleRows();
@@ -176,7 +176,7 @@ public class MenuScreen extends Screen {
 			int idx = scroll + i;
 			if (idx >= list.size()) break;
 			EntityType<?> t = list.get(idx);
-			String id = BuiltInBuiltInRegistries.ENTITY_TYPE.getKey(t).toString();
+			String id = BuiltInRegistries.ENTITY_TYPE.getKey(t).toString();
 			boolean on = cfg.mobs.contains(id);
 			int ry = listTop() + i * ROW_H;
 			boolean hover = inside(mx, my, sx, ry, W - 20, ROW_H - 2);
@@ -184,9 +184,9 @@ public class MenuScreen extends Screen {
 
 			SpawnEggItem egg = SpawnEggItem.byId(t);
 			if (egg != null) {
-				ctx.renderItem(new ItemStack(egg), sx + 2, ry);
+				ctx.item(new ItemStack(egg), sx + 2, ry);
 			}
-			ctx.drawString(font, nameOf(t), sx + 24, ry + 5, on ? ACCENT : TEXT, false);
+			ctx.text(font, nameOf(t), sx + 24, ry + 5, on ? ACCENT : TEXT, false);
 
 			// anahtar
 			int kx = px + W - 10 - 34;
@@ -195,18 +195,18 @@ public class MenuScreen extends Screen {
 		}
 
 		if (list.isEmpty()) {
-			ctx.drawString(font, "No matching mobs", sx + 6, listTop() + 6, TEXT_DIM, false);
+			ctx.text(font, "No matching mobs", sx + 6, listTop() + 6, TEXT_DIM, false);
 		}
-		ctx.drawString(font, "Selected: " + cfg.mobs.size(), px + W - 70, py + 10, TEXT_DIM, false);
+		ctx.text(font, "Selected: " + cfg.mobs.size(), px + W - 70, py + 10, TEXT_DIM, false);
 	}
 
-	private void renderFoods(GuiGraphics ctx, int mx, int my) {
+	private void renderFoods(GuiGraphicsExtractor ctx, int mx, int my) {
 		Config cfg = Config.get();
 		int sx = px + 10, sy = py + 50;
 		ctx.fill(sx, sy, px + W - 10, sy + 20, PANEL_LIGHT);
-		ctx.renderOutline(sx, sy, W - 20, 20, ACCENT_DIM);
+		ctx.outline(sx, sy, W - 20, 20, ACCENT_DIM);
 		String shown = search.isEmpty() ? "Search foods... (type to search)" : search + (System.currentTimeMillis() / 500 % 2 == 0 ? "_" : "");
-		ctx.drawString(font, shown, sx + 6, sy + 6, search.isEmpty() ? TEXT_DIM : TEXT, false);
+		ctx.text(font, shown, sx + 6, sy + 6, search.isEmpty() ? TEXT_DIM : TEXT, false);
 
 		List<Item> list = filteredFoods();
 		int rows = visibleRows();
@@ -217,23 +217,23 @@ public class MenuScreen extends Screen {
 			int idx = scroll + i;
 			if (idx >= list.size()) break;
 			Item t = list.get(idx);
-			boolean on = cfg.foods.contains(BuiltInBuiltInRegistries.ITEM.getKey(t).toString());
+			boolean on = cfg.foods.contains(BuiltInRegistries.ITEM.getKey(t).toString());
 			int ry = listTop() + i * ROW_H;
 			boolean hover = inside(mx, my, sx, ry, W - 20, ROW_H - 2);
 			ctx.fill(sx, ry, px + W - 10, ry + ROW_H - 2, on ? 0xFF3A2A12 : (hover ? HOVER : PANEL_LIGHT));
-			ctx.renderItem(new ItemStack(t), sx + 2, ry);
-			ctx.drawString(font, nameOf(t), sx + 24, ry + 5, on ? ACCENT : TEXT, false);
+			ctx.item(new ItemStack(t), sx + 2, ry);
+			ctx.text(font, nameOf(t), sx + 24, ry + 5, on ? ACCENT : TEXT, false);
 			int kx = px + W - 10 - 34;
 			ctx.fill(kx, ry + 3, kx + 28, ry + 15, on ? ACCENT : 0xFF444444);
 			ctx.fill(on ? kx + 16 : kx + 2, ry + 5, on ? kx + 26 : kx + 12, ry + 13, TEXT);
 		}
 		if (list.isEmpty()) {
-			ctx.drawString(font, "No matching foods", sx + 6, listTop() + 6, TEXT_DIM, false);
+			ctx.text(font, "No matching foods", sx + 6, listTop() + 6, TEXT_DIM, false);
 		}
-		ctx.drawString(font, "Selected: " + cfg.foods.size(), px + W - 70, py + 10, TEXT_DIM, false);
+		ctx.text(font, "Selected: " + cfg.foods.size(), px + W - 70, py + 10, TEXT_DIM, false);
 	}
 
-	private void renderSettings(GuiGraphics ctx, int mx, int my) {
+	private void renderSettings(GuiGraphicsExtractor ctx, int mx, int my) {
 		Config cfg = Config.get();
 		int y = py + 56;
 		settingRow(ctx, mx, my, y, "Search range", fmt(cfg.searchRange) + " blocks");
@@ -245,7 +245,7 @@ public class MenuScreen extends Screen {
 
 		// eşya toplama anahtarı
 		int ry = y + 140;
-		ctx.drawString(font, "Pick up items", px + 14, ry + 6, TEXT, false);
+		ctx.text(font, "Pick up items", px + 14, ry + 6, TEXT, false);
 		int kx = px + W - 10 - 34;
 		boolean on = cfg.pickup;
 		ctx.fill(kx, ry + 3, kx + 28, ry + 15, on ? ACCENT : 0xFF444444);
@@ -254,13 +254,13 @@ public class MenuScreen extends Screen {
 	}
 
 	/** Hunger bar: filled drumsticks = hunger level at which the bot starts eating. */
-	private void drawHungerBar(GuiGraphics ctx, int x, int y, int threshold) {
+	private void drawHungerBar(GuiGraphicsExtractor ctx, int x, int y, int threshold) {
 		for (int i = 0; i < 10; i++) {
 			int ix = x + i * 18;
 			ctx.fill(ix, y, ix + 17, y + 17, 0xFF2E2E2E);
 			int filled = threshold - i * 2; // 2 = full, 1 = half, <=0 = empty
 			if (filled >= 1) {
-				ctx.renderItem(new ItemStack(Items.COOKED_CHICKEN), ix, y);
+				ctx.item(new ItemStack(Items.COOKED_CHICKEN), ix, y);
 				if (filled == 1) {
 					ctx.fill(ix + 8, y, ix + 17, y + 17, 0xB0222222);
 				}
@@ -268,34 +268,34 @@ public class MenuScreen extends Screen {
 		}
 	}
 
-	private void settingRow(GuiGraphics ctx, int mx, int my, int y, String label, String value) {
-		ctx.drawString(font, label, px + 14, y + 6, TEXT, false);
+	private void settingRow(GuiGraphicsExtractor ctx, int mx, int my, int y, String label, String value) {
+		ctx.text(font, label, px + 14, y + 6, TEXT, false);
 		int minusX = px + W - 150;
 		int plusX = px + W - 36;
 		smallButton(ctx, mx, my, minusX, y, "-");
-		ctx.drawCenteredString(font, value, (minusX + 20 + plusX) / 2, y + 6, ACCENT);
+		ctx.centeredText(font, value, (minusX + 20 + plusX) / 2, y + 6, ACCENT);
 		smallButton(ctx, mx, my, plusX, y, "+");
 	}
 
-	private void smallButton(GuiGraphics ctx, int mx, int my, int x, int y, String label) {
+	private void smallButton(GuiGraphicsExtractor ctx, int mx, int my, int x, int y, String label) {
 		boolean hover = inside(mx, my, x, y, 20, 20);
 		ctx.fill(x, y, x + 20, y + 20, hover ? ACCENT_DIM : PANEL_LIGHT);
-		ctx.drawCenteredString(font, label, x + 10, y + 6, TEXT);
+		ctx.centeredText(font, label, x + 10, y + 6, TEXT);
 	}
 
-	private void renderStatus(GuiGraphics ctx, int mx, int my) {
+	private void renderStatus(GuiGraphicsExtractor ctx, int mx, int my) {
 		Config cfg = Config.get();
 		int y = py + 58;
-		ctx.drawString(font, "State: ", px + 14, y, TEXT, false);
-		ctx.drawString(font, AutoSpawnerClient.enabled ? "ON" : "OFF", px + 56, y, AutoSpawnerClient.enabled ? GREEN : RED, false);
-		ctx.drawString(font, "Hits: " + AutoSpawnerClient.attackCount, px + 14, y + 16, TEXT, false);
-		ctx.drawString(font, "Food left: " + AutoSpawnerClient.carrotsLeft(), px + 14, y + 32, TEXT, false);
-		ctx.drawString(font, "Selected mobs: " + cfg.mobs.size(), px + 14, y + 48, TEXT, false);
+		ctx.text(font, "State: ", px + 14, y, TEXT, false);
+		ctx.text(font, AutoSpawnerClient.enabled ? "ON" : "OFF", px + 56, y, AutoSpawnerClient.enabled ? GREEN : RED, false);
+		ctx.text(font, "Hits: " + AutoSpawnerClient.attackCount, px + 14, y + 16, TEXT, false);
+		ctx.text(font, "Food left: " + AutoSpawnerClient.carrotsLeft(), px + 14, y + 32, TEXT, false);
+		ctx.text(font, "Selected mobs: " + cfg.mobs.size(), px + 14, y + 48, TEXT, false);
 
 		int bx = px + 14, by = y + 76, bw = 140;
 		boolean hover = inside(mx, my, bx, by, bw, 22);
 		ctx.fill(bx, by, bx + bw, by + 22, hover ? ACCENT : ACCENT_DIM);
-		ctx.drawCenteredString(font, AutoSpawnerClient.enabled ? "Turn off" : "Turn on", bx + bw / 2, by + 7, TEXT);
+		ctx.centeredText(font, AutoSpawnerClient.enabled ? "Turn off" : "Turn on", bx + bw / 2, by + 7, TEXT);
 	}
 
 	// ------------------------------------------------------------ girdi
@@ -324,7 +324,7 @@ public class MenuScreen extends Screen {
 				if (idx >= list.size()) break;
 				int ry = listTop() + i * ROW_H;
 				if (inside(mx, my, px + 10, ry, W - 20, ROW_H - 2)) {
-					String id = BuiltInBuiltInRegistries.ENTITY_TYPE.getKey(list.get(idx)).toString();
+					String id = BuiltInRegistries.ENTITY_TYPE.getKey(list.get(idx)).toString();
 					if (!cfg.mobs.remove(id)) {
 						cfg.mobs.add(id);
 					}
@@ -340,7 +340,7 @@ public class MenuScreen extends Screen {
 				if (idx >= list.size()) break;
 				int ry = listTop() + i * ROW_H;
 				if (inside(mx, my, px + 10, ry, W - 20, ROW_H - 2)) {
-					String id = BuiltInBuiltInRegistries.ITEM.getKey(list.get(idx)).toString();
+					String id = BuiltInRegistries.ITEM.getKey(list.get(idx)).toString();
 					if (!cfg.foods.remove(id)) {
 						cfg.foods.add(id);
 					}
