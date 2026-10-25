@@ -1,5 +1,5 @@
 {
-	"key.auto_spawner_mob_attack.toggle": "Auto Spawner Mob Attack aç/kapa",
-	"key.auto_spawner_mob_attack.menu": "Menüyü aç",
+	"key.auto_spawner_mob_attack.toggle": "Toggle Auto Spawner Mob Attack",
+	"key.auto_spawner_mob_attack.menu": "Open menu",
 	"key.category.auto_spawner_mob_attack.main": "Auto Spawner Mob Attack"
 }

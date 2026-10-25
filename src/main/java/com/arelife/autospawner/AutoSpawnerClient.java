@@ -12,6 +12,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
@@ -32,9 +33,10 @@ import java.util.List;
 public class AutoSpawnerClient implements ClientModInitializer {
 	public static final String ID = "auto_spawner_mob_attack";
 
-	/** Kılıç: 1. slot (index 0). Altın havuç: 8. ve 9. slot (index 7 ve 8). */
+	/** Sword and food are found in the hotbar automatically. */
 	private static final int SWORD_SLOT = 0;
-	private static final int[] FOOD_SLOTS = {1, 2, 3, 4, 5, 6, 7, 8};
+	private static final int[] FOOD_SLOTS = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+	private static int prevSlot = 0;
 
 	public static boolean enabled = false;
 	public static int attackCount = 0;
@@ -100,9 +102,9 @@ public class AutoSpawnerClient implements ClientModInitializer {
 			if (food >= 20 || slot < 0) {
 				eating = false;
 				client.options.useKey.setPressed(false);
-				player.getInventory().selectedSlot = SWORD_SLOT;
+				player.getInventory().selectedSlot = restoreSlot(player);
 				if (slot < 0 && food < 20) {
-					disableWithMessage(client, "Yemek bitti, mod kapandı");
+					disableWithMessage(client, "Out of food, mod turned off");
 				}
 			} else {
 				player.getInventory().selectedSlot = slot;
@@ -113,11 +115,12 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		} else if (food <= cfg.hungerThreshold) {
 			int slot = findFoodSlot(player);
 			if (slot < 0) {
-				disableWithMessage(client, "Yemek bitti, mod kapandı");
+				disableWithMessage(client, "Out of food, mod turned off");
 				return;
 			}
 			eating = true;
 			keysHeldByMod = true;
+			prevSlot = player.getInventory().selectedSlot;
 			player.getInventory().selectedSlot = slot;
 			client.options.useKey.setPressed(true);
 			client.options.forwardKey.setPressed(false);
@@ -125,8 +128,9 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		}
 
 		// ---- Kılıç ----
-		if (player.getInventory().selectedSlot != SWORD_SLOT) {
-			player.getInventory().selectedSlot = SWORD_SLOT;
+		int swordSlot = findSwordSlot(player);
+		if (swordSlot >= 0 && player.getInventory().selectedSlot != swordSlot) {
+			player.getInventory().selectedSlot = swordSlot;
 		}
 
 		// ---- Eşya toplama dönemi: her 100 tikte (5 sn) ilk 40 tik (2 sn) ----
@@ -202,7 +206,22 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		return list.stream().min(Comparator.comparingDouble(player::squaredDistanceTo)).orElse(null);
 	}
 
-	/** 2-9. slotlarda menüden seçilen yiyecek; ilk bulunanın slot numarasını döner, yoksa -1. */
+	/** First hotbar slot holding a selected food, or -1. */
+	private static int findSwordSlot(PlayerEntity player) {
+		for (int slot = 0; slot < 9; slot++) {
+			if (player.getInventory().getStack(slot).isIn(ItemTags.SWORDS)) {
+				return slot;
+			}
+		}
+		return -1;
+	}
+
+	/** Slot to hold after eating: the sword if there is one, otherwise the slot held before eating. */
+	private static int restoreSlot(PlayerEntity player) {
+		int sword = findSwordSlot(player);
+		return sword >= 0 ? sword : prevSlot;
+	}
+
 	private static int findFoodSlot(PlayerEntity player) {
 		Config cfg = Config.get();
 		for (int slot : FOOD_SLOTS) {
@@ -253,7 +272,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		eating = false;
 		releaseKeys(client);
 		if (client.player != null) {
-			client.player.getInventory().selectedSlot = SWORD_SLOT;
+			client.player.getInventory().selectedSlot = restoreSlot(client.player);
 			client.player.sendMessage(Text.literal(message).formatted(Formatting.RED), true);
 		}
 	}
@@ -270,7 +289,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 
 	public static Text statusText() {
 		return enabled
-				? Text.literal("Auto Spawner Mob Attack: AÇIK").formatted(Formatting.GREEN)
-				: Text.literal("Auto Spawner Mob Attack: KAPALI").formatted(Formatting.RED);
+				? Text.literal("Auto Spawner Mob Attack: ON").formatted(Formatting.GREEN)
+				: Text.literal("Auto Spawner Mob Attack: OFF").formatted(Formatting.RED);
 	}
 }

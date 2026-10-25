@@ -9,4 +9,4 @@ pluginManagement {
 	}
 }
 
-rootProject.name = 'auto-spawner-mob-attack'
+rootProject.name = 'auto-spawner-mob-attack-mc1.21.4'

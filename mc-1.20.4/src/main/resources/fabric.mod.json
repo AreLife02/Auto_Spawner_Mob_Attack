@@ -1,0 +1,23 @@
+{
+	"schemaVersion": 1,
+	"id": "auto_spawner_mob_attack",
+	"version": "${version}",
+	"name": "Auto Spawner Mob Attack",
+	"description": "Client-side helper for spawner farms: attacks selected mobs next to you, eats food when hungry and picks up drops. Use only on servers that allow it.",
+	"authors": [
+		"AreLife02"
+	],
+	"license": "All-Rights-Reserved",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"com.arelife.autospawner.AutoSpawnerClient"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.16.0",
+		"minecraft": ">=1.20.4 <1.20.5",
+		"java": ">=17",
+		"fabric-api": "*"
+	}
+}

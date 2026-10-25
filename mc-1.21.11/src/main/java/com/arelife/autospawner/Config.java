@@ -17,9 +17,11 @@ public class Config {
 
 	/** Vurulacak canlılar (örn. "minecraft:blaze"). */
 	public Set<String> mobs = new LinkedHashSet<>(Set.of("minecraft:blaze"));
-	/** Yenecek yiyecekler (2-9. slotlardan yenir). */
-	public Set<String> foods = new LinkedHashSet<>(Set.of("minecraft:golden_carrot"));
-	/** Bu mesafedeki canlılar aranır (blok). */
+	/** Yenecek yiyecekler (any hotbar slot). */
+	public Set<String> foods = new LinkedHashSet<>();
+	/** False on first run: all foods get selected once. */
+	public boolean foodsInitialized = false;
+	/** Mobs within this distance are searched (blocks). */
 	public double searchRange = 6.0;
 	/** Hedefe bu kadar yaklaşılır (blok). */
 	public double attackDistance = 1.0;
@@ -35,6 +37,7 @@ public class Config {
 	public static Config get() {
 		if (instance == null) {
 			instance = load();
+			instance.ensureFoods();
 		}
 		return instance;
 	}
@@ -45,7 +48,7 @@ public class Config {
 				Config c = GSON.fromJson(Files.readString(FILE), Config.class);
 				if (c != null) {
 					if (c.mobs == null) c.mobs = new LinkedHashSet<>();
-					if (c.foods == null) c.foods = new LinkedHashSet<>(Set.of("minecraft:golden_carrot"));
+					if (c.foods == null) c.foods = new LinkedHashSet<>();
 					c.clamp();
 					return c;
 				}
@@ -56,11 +59,24 @@ public class Config {
 		return new Config();
 	}
 
+	private void ensureFoods() {
+		if (foodsInitialized) return;
+		try {
+			for (net.minecraft.item.Item item : FoodList.all()) {
+				foods.add(net.minecraft.registry.Registries.ITEM.getId(item).toString());
+			}
+			foodsInitialized = true;
+			save();
+		} catch (Exception e) {
+			System.err.println("[AutoSpawnerMobAttack] Could not fill food list: " + e);
+		}
+	}
+
 	public void clamp() {
 		searchRange = Math.max(2.0, Math.min(12.0, searchRange));
 		attackDistance = Math.max(0.5, Math.min(3.0, attackDistance));
 		hungerThreshold = Math.max(1, Math.min(19, hungerThreshold));
-		attackIntervalTicks = Math.max(10, Math.min(40, attackIntervalTicks));
+		attackIntervalTicks = Math.max(1, Math.min(40, attackIntervalTicks));
 	}
 
 	public void save() {
