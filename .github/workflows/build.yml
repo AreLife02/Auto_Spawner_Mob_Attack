@@ -13,22 +13,23 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: '1.20.4', dir: 'mc-1.20.4', gradle: '8.12' }
-          - { name: '1.20.6', dir: 'mc-1.20.6', gradle: '8.12' }
-          - { name: '1.21.1', dir: 'mc-1.21.1', gradle: '8.12' }
-          - { name: '1.21.3', dir: 'mc-1.21.3', gradle: '8.12' }
-          - { name: '1.21.4', dir: '.', gradle: '8.12' }
-          - { name: '1.21.5', dir: 'mc-1.21.5', gradle: '9.2.1' }
-          - { name: '1.21.8', dir: 'mc-1.21.8', gradle: '9.2.1' }
-          - { name: '1.21.10', dir: 'mc-1.21.10', gradle: '9.2.1' }
-          - { name: '1.21.11', dir: 'mc-1.21.11', gradle: '9.2.1' }
+          - { name: '1.20.4', dir: 'mc-1.20.4', gradle: '8.12', java: '21' }
+          - { name: '1.20.6', dir: 'mc-1.20.6', gradle: '8.12', java: '21' }
+          - { name: '1.21.1', dir: 'mc-1.21.1', gradle: '8.12', java: '21' }
+          - { name: '1.21.3', dir: 'mc-1.21.3', gradle: '8.12', java: '21' }
+          - { name: '1.21.4', dir: '.', gradle: '8.12', java: '21' }
+          - { name: '1.21.5', dir: 'mc-1.21.5', gradle: '9.2.1', java: '21' }
+          - { name: '1.21.8', dir: 'mc-1.21.8', gradle: '9.2.1', java: '21' }
+          - { name: '1.21.10', dir: 'mc-1.21.10', gradle: '9.2.1', java: '21' }
+          - { name: '1.21.11', dir: 'mc-1.21.11', gradle: '9.2.1', java: '21' }
+          - { name: '26.1.2', dir: 'mc-26.1', gradle: '9.4.0', java: '25' }
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 21
+          java-version: ${{ matrix.java }}
 
       - uses: gradle/actions/setup-gradle@v4
         with:
