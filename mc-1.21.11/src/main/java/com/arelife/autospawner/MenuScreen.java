@@ -2,6 +2,8 @@ package com.arelife.autospawner;
 
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.item.Item;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.input.CharInput;
 import net.minecraft.client.input.KeyInput;
@@ -18,7 +20,7 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Menü (K tuşu). Üç sekme: Canlılar, Ayarlar, Durum.
+ * Menü (K tuşu). Dört sekme: Canlılar, Yemekler, Ayarlar, Durum.
  * Widget kullanmaz, her şeyi kendi çizer; böylece sürüm değişikliklerinden az etkilenir.
  */
 public class MenuScreen extends Screen {
@@ -37,6 +39,7 @@ public class MenuScreen extends Screen {
 	private static final int ROW_H = 20;
 
 	private static List<EntityType<?>> ALL_MOBS;
+	private static List<Item> ALL_FOODS;
 
 	private int tab = 0; // 0 canlılar, 1 ayarlar, 2 durum
 	private String search = "";
@@ -94,6 +97,34 @@ public class MenuScreen extends Screen {
 		return out;
 	}
 
+	private static List<Item> allFoods() {
+		if (ALL_FOODS == null) {
+			List<Item> list = new ArrayList<>();
+			for (Item item : Registries.ITEM) {
+				if (item.getComponents().contains(DataComponentTypes.FOOD)) {
+					list.add(item);
+				}
+			}
+			list.sort(Comparator.comparing(t -> t.getName().getString()));
+			ALL_FOODS = list;
+		}
+		return ALL_FOODS;
+	}
+
+	private List<Item> filteredFoods() {
+		String q = search.toLowerCase();
+		List<Item> out = new ArrayList<>();
+		for (Item t : allFoods()) {
+			String id = Registries.ITEM.getId(t).toString();
+			if (q.isEmpty() || t.getName().getString().toLowerCase().contains(q) || id.contains(q)) {
+				out.add(t);
+			}
+		}
+		Config cfg = Config.get();
+		out.sort(Comparator.comparing((Item t) -> !cfg.foods.contains(Registries.ITEM.getId(t).toString())));
+		return out;
+	}
+
 	private int listTop() {
 		return py + 80;
 	}
@@ -112,9 +143,9 @@ public class MenuScreen extends Screen {
 
 		ctx.drawText(textRenderer, "AUTO SPAWNER MOB ATTACK", px + 10, py + 8, ACCENT, true);
 
-		String[] tabs = {"Canlılar", "Ayarlar", "Durum"};
-		int tabW = (W - 20) / 3;
-		for (int i = 0; i < 3; i++) {
+		String[] tabs = {"Canlılar", "Yemekler", "Ayarlar", "Durum"};
+		int tabW = (W - 20) / 4;
+		for (int i = 0; i < 4; i++) {
 			int tx = px + 10 + i * tabW;
 			int ty = py + 24;
 			boolean hover = inside(mouseX, mouseY, tx, ty, tabW - 4, 20);
@@ -124,7 +155,8 @@ public class MenuScreen extends Screen {
 
 		switch (tab) {
 			case 0 -> renderMobs(ctx, mouseX, mouseY);
-			case 1 -> renderSettings(ctx, mouseX, mouseY);
+			case 1 -> renderFoods(ctx, mouseX, mouseY);
+			case 2 -> renderSettings(ctx, mouseX, mouseY);
 			default -> renderStatus(ctx, mouseX, mouseY);
 		}
 
@@ -172,6 +204,39 @@ public class MenuScreen extends Screen {
 		ctx.drawText(textRenderer, "Seçili: " + cfg.mobs.size(), px + W - 70, py + 10, TEXT_DIM, false);
 	}
 
+	private void renderFoods(DrawContext ctx, int mx, int my) {
+		Config cfg = Config.get();
+		int sx = px + 10, sy = py + 50;
+		ctx.fill(sx, sy, px + W - 10, sy + 20, PANEL_LIGHT);
+		ctx.drawStrokedRectangle(sx, sy, W - 20, 20, ACCENT_DIM);
+		String shown = search.isEmpty() ? "Yemek ara... (yazarak ara)" : search + (System.currentTimeMillis() / 500 % 2 == 0 ? "_" : "");
+		ctx.drawText(textRenderer, shown, sx + 6, sy + 6, search.isEmpty() ? TEXT_DIM : TEXT, false);
+
+		List<Item> list = filteredFoods();
+		int rows = visibleRows();
+		int maxScroll = Math.max(0, list.size() - rows);
+		scroll = Math.max(0, Math.min(maxScroll, scroll));
+
+		for (int i = 0; i < rows; i++) {
+			int idx = scroll + i;
+			if (idx >= list.size()) break;
+			Item t = list.get(idx);
+			boolean on = cfg.foods.contains(Registries.ITEM.getId(t).toString());
+			int ry = listTop() + i * ROW_H;
+			boolean hover = inside(mx, my, sx, ry, W - 20, ROW_H - 2);
+			ctx.fill(sx, ry, px + W - 10, ry + ROW_H - 2, on ? 0xFF3A2A12 : (hover ? HOVER : PANEL_LIGHT));
+			ctx.drawItem(new ItemStack(t), sx + 2, ry);
+			ctx.drawText(textRenderer, t.getName().getString(), sx + 24, ry + 5, on ? ACCENT : TEXT, false);
+			int kx = px + W - 10 - 34;
+			ctx.fill(kx, ry + 3, kx + 28, ry + 15, on ? ACCENT : 0xFF444444);
+			ctx.fill(on ? kx + 16 : kx + 2, ry + 5, on ? kx + 26 : kx + 12, ry + 13, TEXT);
+		}
+		if (list.isEmpty()) {
+			ctx.drawText(textRenderer, "Eşleşen yemek yok", sx + 6, listTop() + 6, TEXT_DIM, false);
+		}
+		ctx.drawText(textRenderer, "Seçili: " + cfg.foods.size(), px + W - 70, py + 10, TEXT_DIM, false);
+	}
+
 	private void renderSettings(DrawContext ctx, int mx, int my) {
 		Config cfg = Config.get();
 		int y = py + 56;
@@ -189,7 +254,7 @@ public class MenuScreen extends Screen {
 		ctx.fill(kx, ry + 3, kx + 28, ry + 15, on ? ACCENT : 0xFF444444);
 		ctx.fill(on ? kx + 16 : kx + 2, ry + 5, on ? kx + 26 : kx + 12, ry + 13, TEXT);
 
-		ctx.drawText(textRenderer, "Kılıç: 1. slot   Altın havuç: 8. ve 9. slot", px + 14, ry + 30, TEXT_DIM, false);
+		ctx.drawText(textRenderer, "Kılıç: 1. slot   Yemek: 2-9. slotlar", px + 14, ry + 30, TEXT_DIM, false);
 	}
 
 	private void settingRow(DrawContext ctx, int mx, int my, int y, String label, String value) {
@@ -213,7 +278,7 @@ public class MenuScreen extends Screen {
 		ctx.drawText(textRenderer, "Durum: ", px + 14, y, TEXT, false);
 		ctx.drawText(textRenderer, AutoSpawnerClient.enabled ? "AÇIK" : "KAPALI", px + 56, y, AutoSpawnerClient.enabled ? GREEN : RED, false);
 		ctx.drawText(textRenderer, "Yapılan vuruş: " + AutoSpawnerClient.attackCount, px + 14, y + 16, TEXT, false);
-		ctx.drawText(textRenderer, "Kalan altın havuç: " + AutoSpawnerClient.carrotsLeft(), px + 14, y + 32, TEXT, false);
+		ctx.drawText(textRenderer, "Kalan yemek: " + AutoSpawnerClient.carrotsLeft(), px + 14, y + 32, TEXT, false);
 		ctx.drawText(textRenderer, "Seçili canlı sayısı: " + cfg.mobs.size(), px + 14, y + 48, TEXT, false);
 
 		int bx = px + 14, by = y + 76, bw = 140;
@@ -230,10 +295,12 @@ public class MenuScreen extends Screen {
 		Config cfg = Config.get();
 
 		// sekmeler
-		int tabW = (W - 20) / 3;
-		for (int i = 0; i < 3; i++) {
+		int tabW = (W - 20) / 4;
+		for (int i = 0; i < 4; i++) {
 			if (inside(mx, my, px + 10 + i * tabW, py + 24, tabW - 4, 20)) {
 				tab = i;
+				scroll = 0;
+				search = "";
 				return true;
 			}
 		}
@@ -255,6 +322,22 @@ public class MenuScreen extends Screen {
 				}
 			}
 		} else if (tab == 1) {
+			List<Item> list = filteredFoods();
+			int rows = visibleRows();
+			for (int i = 0; i < rows; i++) {
+				int idx = scroll + i;
+				if (idx >= list.size()) break;
+				int ry = listTop() + i * ROW_H;
+				if (inside(mx, my, px + 10, ry, W - 20, ROW_H - 2)) {
+					String id = Registries.ITEM.getId(list.get(idx)).toString();
+					if (!cfg.foods.remove(id)) {
+						cfg.foods.add(id);
+					}
+					cfg.save();
+					return true;
+				}
+			}
+		} else if (tab == 2) {
 			int y = py + 56;
 			int minusX = px + W - 150;
 			int plusX = px + W - 36;
@@ -279,7 +362,7 @@ public class MenuScreen extends Screen {
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-		if (tab == 0) {
+		if (tab <= 1) {
 			scroll -= (int) Math.signum(verticalAmount) * 2;
 			return true;
 		}
@@ -288,7 +371,7 @@ public class MenuScreen extends Screen {
 
 	@Override
 	public boolean charTyped(CharInput input) {
-		if (tab == 0 && input.isValidChar() && search.length() < 24) {
+		if (tab <= 1 && input.isValidChar() && search.length() < 24) {
 			search += input.asString();
 			scroll = 0;
 			return true;
@@ -298,7 +381,7 @@ public class MenuScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(KeyInput input) {
-		if (tab == 0 && input.key() == GLFW.GLFW_KEY_BACKSPACE) {
+		if (tab <= 1 && input.key() == GLFW.GLFW_KEY_BACKSPACE) {
 			if (!search.isEmpty()) {
 				search = search.substring(0, search.length() - 1);
 				scroll = 0;

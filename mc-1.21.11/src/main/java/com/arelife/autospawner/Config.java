@@ -17,6 +17,8 @@ public class Config {
 
 	/** Vurulacak canlılar (örn. "minecraft:blaze"). */
 	public Set<String> mobs = new LinkedHashSet<>(Set.of("minecraft:blaze"));
+	/** Yenecek yiyecekler (2-9. slotlardan yenir). */
+	public Set<String> foods = new LinkedHashSet<>(Set.of("minecraft:golden_carrot"));
 	/** Bu mesafedeki canlılar aranır (blok). */
 	public double searchRange = 6.0;
 	/** Hedefe bu kadar yaklaşılır (blok). */
@@ -43,6 +45,7 @@ public class Config {
 				Config c = GSON.fromJson(Files.readString(FILE), Config.class);
 				if (c != null) {
 					if (c.mobs == null) c.mobs = new LinkedHashSet<>();
+					if (c.foods == null) c.foods = new LinkedHashSet<>(Set.of("minecraft:golden_carrot"));
 					c.clamp();
 					return c;
 				}

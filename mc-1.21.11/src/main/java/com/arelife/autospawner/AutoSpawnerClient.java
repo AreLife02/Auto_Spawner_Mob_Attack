@@ -35,7 +35,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 
 	/** Kılıç: 1. slot (index 0). Altın havuç: 8. ve 9. slot (index 7 ve 8). */
 	private static final int SWORD_SLOT = 0;
-	private static final int[] FOOD_SLOTS = {7, 8};
+	private static final int[] FOOD_SLOTS = {1, 2, 3, 4, 5, 6, 7, 8};
 
 	public static boolean enabled = false;
 	public static int attackCount = 0;
@@ -53,7 +53,6 @@ public class AutoSpawnerClient implements ClientModInitializer {
 	private static final int MIN_ATTACK_TICKS = 15;
 	private static int ticksSinceAttack = 100;
 	private static int aimedTargetId = -1;
-	private static int lastHitId = -1;
 
 	@Override
 	public void onInitializeClient() {
@@ -106,7 +105,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 				client.options.useKey.setPressed(false);
 				player.getInventory().setSelectedSlot(SWORD_SLOT);
 				if (slot < 0 && food < 20) {
-					disableWithMessage(client, "Altın havuç bitti, mod kapandı");
+					disableWithMessage(client, "Yemek bitti, mod kapandı");
 				}
 			} else {
 				player.getInventory().setSelectedSlot(slot);
@@ -117,7 +116,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		} else if (food <= cfg.hungerThreshold) {
 			int slot = findFoodSlot(player);
 			if (slot < 0) {
-				disableWithMessage(client, "Altın havuç bitti, mod kapandı");
+				disableWithMessage(client, "Yemek bitti, mod kapandı");
 				return;
 			}
 			eating = true;
@@ -166,7 +165,6 @@ public class AutoSpawnerClient implements ClientModInitializer {
 				player.swingHand(Hand.MAIN_HAND);
 				attackCount++;
 				ticksSinceAttack = 0;
-				lastHitId = target.getId();
 			}
 			return;
 		}
@@ -196,9 +194,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 						&& e.isAlive()
 						&& cfg.mobs.contains(Registries.ENTITY_TYPE.getId(e.getType()).toString())
 						&& player.distanceTo(e) <= cfg.searchRange);
-		List<LivingEntity> others = list.stream().filter(e -> e.getId() != lastHitId).toList();
-		List<LivingEntity> pool = others.isEmpty() ? list : others;
-		return pool.stream().min(Comparator.comparingDouble(player::squaredDistanceTo)).orElse(null);
+		return list.stream().min(Comparator.comparingDouble(player::squaredDistanceTo)).orElse(null);
 	}
 
 	private static ItemEntity findItem(MinecraftClient client, Config cfg) {
@@ -209,10 +205,12 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		return list.stream().min(Comparator.comparingDouble(player::squaredDistanceTo)).orElse(null);
 	}
 
-	/** 8. ve 9. slottaki altın havuç; ilk dolu olanın slot numarasını döner, yoksa -1. */
+	/** 2-9. slotlarda menüden seçilen yiyecek; ilk bulunanın slot numarasını döner, yoksa -1. */
 	private static int findFoodSlot(PlayerEntity player) {
+		Config cfg = Config.get();
 		for (int slot : FOOD_SLOTS) {
-			if (player.getInventory().getStack(slot).isOf(Items.GOLDEN_CARROT)) {
+			var stack = player.getInventory().getStack(slot);
+			if (!stack.isEmpty() && cfg.foods.contains(Registries.ITEM.getId(stack.getItem()).toString())) {
 				return slot;
 			}
 		}
@@ -222,10 +220,11 @@ public class AutoSpawnerClient implements ClientModInitializer {
 	public static int carrotsLeft() {
 		MinecraftClient client = MinecraftClient.getInstance();
 		if (client.player == null) return 0;
+		Config cfg = Config.get();
 		int total = 0;
 		for (int slot : FOOD_SLOTS) {
 			var stack = client.player.getInventory().getStack(slot);
-			if (stack.isOf(Items.GOLDEN_CARROT)) total += stack.getCount();
+			if (!stack.isEmpty() && cfg.foods.contains(Registries.ITEM.getId(stack.getItem()).toString())) total += stack.getCount();
 		}
 		return total;
 	}
