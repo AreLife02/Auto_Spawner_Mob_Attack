@@ -46,6 +46,11 @@ public class AutoSpawnerClient implements ClientModInitializer {
 	private static boolean keysHeldByMod = false;
 	private static int tickCounter = 0;
 
+	/** Vuruşlar arası en az bu kadar tik (kılıç dolumu ~12,5 tik; sunucu gecikmesine karşı pay). */
+	private static final int MIN_ATTACK_TICKS = 15;
+	private static int ticksSinceAttack = 100;
+	private static int aimedTargetId = -1;
+
 	@Override
 	public void onInitializeClient() {
 		Config.get();
@@ -85,6 +90,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		}
 
 		tickCounter++;
+		if (ticksSinceAttack < 1000) ticksSinceAttack++;
 		if (tickCounter % 20 == 0 && !eating) {
 			client.player.sendMessage(statusText(), true);
 		}
@@ -134,17 +140,26 @@ public class AutoSpawnerClient implements ClientModInitializer {
 			lookAt(player, target.getPos().add(0, target.getHeight() * 0.5, 0));
 			double dist = horizontalDistance(player, target);
 
+			// Önceki tikte de bu hedefe bakıyorsak bakış sunucuya ulaşmıştır
+			boolean alreadyAimed = (aimedTargetId == target.getId());
+			aimedTargetId = target.getId();
+
 			keysHeldByMod = true;
 			client.options.forwardKey.setPressed(dist > cfg.attackDistance);
 
-			if (player.squaredDistanceTo(target) <= sq(cfg.attackDistance + 0.6)
+			if (alreadyAimed
+					&& ticksSinceAttack >= MIN_ATTACK_TICKS
+					&& player.squaredDistanceTo(target) <= sq(cfg.attackDistance + 0.6)
 					&& player.getAttackCooldownProgress(0.5f) >= 1.0f) {
 				client.interactionManager.attackEntity(player, target);
 				player.swingHand(Hand.MAIN_HAND);
 				attackCount++;
+				ticksSinceAttack = 0;
 			}
 			return;
 		}
+
+		aimedTargetId = -1;
 
 		// ---- Eşya toplama ----
 		if (cfg.pickup) {
