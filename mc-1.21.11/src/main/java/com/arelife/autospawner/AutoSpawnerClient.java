@@ -54,6 +54,18 @@ public class AutoSpawnerClient implements ClientModInitializer {
 	private static int ticksSinceAttack = 100;
 	private static int aimedTargetId = -1;
 
+	private static final java.util.Random RNG = new java.util.Random();
+	/** Gezinme alanının merkezi (F10'a basıldığındaki konum). */
+	private static Vec3d anchor = null;
+	private static Vec3d wanderPoint = null;
+	private static int wanderTicks = 0;
+	/** Hedefe hangi açıdan yaklaşılacağı (radyan); her vuruştan sonra değişir. */
+	private static double approachAngle = 0;
+	private static int idleTicks = 0;
+	private static int jumpTicksLeft = 0;
+	/** En son vurulan canlı; sıradaki vuruş başka canlıya yapılır. */
+	private static int lastHitId = -1;
+
 	@Override
 	public void onInitializeClient() {
 		Config.get();
@@ -84,8 +96,16 @@ public class AutoSpawnerClient implements ClientModInitializer {
 			}
 		}
 
+		if (!enabled) {
+			anchor = null;
+			wanderPoint = null;
+			lastHitId = -1;
+		}
 		if (!enabled || client.player == null || client.world == null || client.interactionManager == null) {
 			return;
+		}
+		if (anchor == null) {
+			anchor = client.player.getEntityPos();
 		}
 		tickCounter++;
 		if (ticksSinceAttack < 1000) ticksSinceAttack++;
@@ -110,7 +130,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 			} else {
 				player.getInventory().setSelectedSlot(slot);
 				client.options.useKey.setPressed(true);
-				client.options.forwardKey.setPressed(false);
+				stopMovement(client);
 				return;
 			}
 		} else if (food <= cfg.hungerThreshold) {
@@ -123,7 +143,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 			keysHeldByMod = true;
 			player.getInventory().setSelectedSlot(slot);
 			client.options.useKey.setPressed(true);
-			client.options.forwardKey.setPressed(false);
+			stopMovement(client);
 			return;
 		}
 
@@ -139,6 +159,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 				aimedTargetId = -1;
 				lookAt(player, drop.getEntityPos());
 				keysHeldByMod = true;
+				stopMovement(client);
 				client.options.forwardKey.setPressed(horizontalDistance(player, drop) > 0.4);
 				return;
 			}
@@ -149,13 +170,26 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		if (target != null) {
 			lookAt(player, target.getEntityPos().add(0, target.getHeight() * 0.5, 0));
 			double dist = horizontalDistance(player, target);
+			idleTicks = 0;
+			wanderPoint = null;
+			jumpTicksLeft = 0;
+			client.options.jumpKey.setPressed(false);
 
 			// Önceki tikte de bu hedefe bakıyorsak bakış sunucuya ulaşmıştır
 			boolean alreadyAimed = (aimedTargetId == target.getId());
 			aimedTargetId = target.getId();
 
 			keysHeldByMod = true;
-			client.options.forwardKey.setPressed(dist > cfg.attackDistance);
+			if (cfg.roamSize > 0 && anchor != null) {
+				// Hedefin çevresinde, seçilen açıdaki noktaya yürü (gezinme alanının içinde kalarak)
+				double half = cfg.roamSize / 2.0;
+				double gx = clamp(target.getX() + Math.cos(approachAngle) * cfg.attackDistance, anchor.x - half, anchor.x + half);
+				double gz = clamp(target.getZ() + Math.sin(approachAngle) * cfg.attackDistance, anchor.z - half, anchor.z + half);
+				moveToward(client, player, gx, gz, 0.25);
+			} else {
+				stopMovement(client);
+				client.options.forwardKey.setPressed(dist > cfg.attackDistance);
+			}
 
 			if (alreadyAimed
 					&& ticksSinceAttack >= cfg.attackIntervalTicks
@@ -165,6 +199,8 @@ public class AutoSpawnerClient implements ClientModInitializer {
 				player.swingHand(Hand.MAIN_HAND);
 				attackCount++;
 				ticksSinceAttack = 0;
+				approachAngle = RNG.nextDouble() * Math.PI * 2; // bir sonraki vuruş başka açıdan
+				lastHitId = target.getId(); // öldürmeye odaklanma, sıradaki vuruş başka canlıya
 			}
 			return;
 		}
@@ -177,12 +213,43 @@ public class AutoSpawnerClient implements ClientModInitializer {
 			if (item != null) {
 				lookAt(player, item.getEntityPos());
 				keysHeldByMod = true;
+				stopMovement(client);
 				client.options.forwardKey.setPressed(horizontalDistance(player, item) > 0.4);
 				return;
 			}
 		}
 
-		releaseKeys(client);
+		// ---- Boşta: alanda gezin, ara sıra zıpla ----
+		idleTicks++;
+		if (cfg.roamSize > 0 && anchor != null) {
+			double half = cfg.roamSize / 2.0;
+			wanderTicks--;
+			if (wanderPoint != null
+					&& Math.hypot(wanderPoint.x - player.getX(), wanderPoint.z - player.getZ()) < 0.3) {
+				wanderTicks = 0;
+			}
+			if (wanderPoint == null || wanderTicks <= 0) {
+				wanderPoint = new Vec3d(
+						anchor.x + (RNG.nextDouble() * 2 - 1) * half,
+						anchor.y,
+						anchor.z + (RNG.nextDouble() * 2 - 1) * half);
+				wanderTicks = 40 + RNG.nextInt(60);
+			}
+			moveToward(client, player, wanderPoint.x, wanderPoint.z, 0.3);
+		} else {
+			stopMovement(client);
+		}
+
+		if (cfg.idleJump && idleTicks % 50 == 0) {
+			jumpTicksLeft = 2;
+		}
+		if (jumpTicksLeft > 0) {
+			keysHeldByMod = true;
+			client.options.jumpKey.setPressed(true);
+			jumpTicksLeft--;
+		} else {
+			client.options.jumpKey.setPressed(false);
+		}
 	}
 
 	private static LivingEntity findTarget(MinecraftClient client, Config cfg) {
@@ -194,7 +261,10 @@ public class AutoSpawnerClient implements ClientModInitializer {
 						&& e.isAlive()
 						&& cfg.mobs.contains(Registries.ENTITY_TYPE.getId(e.getType()).toString())
 						&& player.distanceTo(e) <= cfg.searchRange);
-		return list.stream().min(Comparator.comparingDouble(player::squaredDistanceTo)).orElse(null);
+		// Son vurulan canlıyı atla; başka canlı yoksa ona devam et
+		List<LivingEntity> others = list.stream().filter(e -> e.getId() != lastHitId).toList();
+		List<LivingEntity> pool = others.isEmpty() ? list : others;
+		return pool.stream().min(Comparator.comparingDouble(player::squaredDistanceTo)).orElse(null);
 	}
 
 	private static ItemEntity findItem(MinecraftClient client, Config cfg) {
@@ -244,6 +314,39 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		return Math.sqrt(dx * dx + dz * dz);
 	}
 
+	private static double clamp(double v, double lo, double hi) {
+		return Math.max(lo, Math.min(hi, v));
+	}
+
+	/** Bakış yönünü değiştirmeden, hedef noktaya W/A/S/D ile yürür. */
+	private static void moveToward(MinecraftClient client, PlayerEntity player, double gx, double gz, double tol) {
+		double dx = gx - player.getX();
+		double dz = gz - player.getZ();
+		boolean fwd = false, back = false, left = false, right = false;
+		if (Math.sqrt(dx * dx + dz * dz) > tol) {
+			double yaw = Math.toRadians(player.getYaw());
+			double f = dx * (-Math.sin(yaw)) + dz * Math.cos(yaw);     // ileri bileşeni
+			double r = dx * (-Math.cos(yaw)) + dz * (-Math.sin(yaw));  // sağ bileşeni
+			fwd = f > 0.15;
+			back = f < -0.15;
+			right = r > 0.15;
+			left = r < -0.15;
+		}
+		client.options.forwardKey.setPressed(fwd);
+		client.options.backKey.setPressed(back);
+		client.options.leftKey.setPressed(left);
+		client.options.rightKey.setPressed(right);
+		keysHeldByMod = true;
+	}
+
+	/** Yürüme tuşlarını bırakır (zıplama ve kullanma hariç). */
+	private static void stopMovement(MinecraftClient client) {
+		client.options.forwardKey.setPressed(false);
+		client.options.backKey.setPressed(false);
+		client.options.leftKey.setPressed(false);
+		client.options.rightKey.setPressed(false);
+	}
+
 	private static double sq(double v) {
 		return v * v;
 	}
@@ -261,10 +364,13 @@ public class AutoSpawnerClient implements ClientModInitializer {
 	/** Modun bastığı tuşları bırakır. */
 	private static void releaseKeys(MinecraftClient client) {
 		if (keysHeldByMod || eating) {
-			client.options.forwardKey.setPressed(false);
+			stopMovement(client);
+			client.options.jumpKey.setPressed(false);
 			client.options.useKey.setPressed(false);
 			keysHeldByMod = false;
 			eating = false;
+			jumpTicksLeft = 0;
+			wanderPoint = null;
 		}
 	}
 

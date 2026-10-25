@@ -33,7 +33,7 @@ public class MenuScreen extends Screen {
 	private static final int RED = 0xFFFF5555;
 
 	private static final int W = 340;
-	private static final int H = 250;
+	private static final int H = 300;
 	private static final int ROW_H = 20;
 
 	private static List<EntityType<?>> ALL_MOBS;
@@ -181,15 +181,17 @@ public class MenuScreen extends Screen {
 
 		settingRow(ctx, mx, my, y + 90, "Vuruş aralığı", cfg.attackIntervalTicks + " tik");
 
-		// eşya toplama anahtarı
-		int ry = y + 120;
-		ctx.drawText(textRenderer, "Eşya topla", px + 14, ry + 6, TEXT, false);
+		settingRow(ctx, mx, my, y + 120, "Gezinme alanı", cfg.roamSize == 0 ? "kapalı" : cfg.roamSize + "x" + cfg.roamSize);
+		toggleRow(ctx, y + 150, "Eşya topla", cfg.pickup);
+		toggleRow(ctx, y + 180, "Boşken zıpla", cfg.idleJump);
+		ctx.drawText(textRenderer, "Kılıç: 1. slot   Altın havuç: 8. ve 9. slot", px + 14, y + 210, TEXT_DIM, false);
+	}
+
+	private void toggleRow(DrawContext ctx, int ry, String label, boolean on) {
+		ctx.drawText(textRenderer, label, px + 14, ry + 6, TEXT, false);
 		int kx = px + W - 10 - 34;
-		boolean on = cfg.pickup;
 		ctx.fill(kx, ry + 3, kx + 28, ry + 15, on ? ACCENT : 0xFF444444);
 		ctx.fill(on ? kx + 16 : kx + 2, ry + 5, on ? kx + 26 : kx + 12, ry + 13, TEXT);
-
-		ctx.drawText(textRenderer, "Kılıç: 1. slot   Altın havuç: 8. ve 9. slot", px + 14, ry + 30, TEXT_DIM, false);
 	}
 
 	private void settingRow(DrawContext ctx, int mx, int my, int y, String label, String value) {
@@ -266,7 +268,10 @@ public class MenuScreen extends Screen {
 			if (inside(mx, my, plusX, y + 60, 20, 20)) { cfg.hungerThreshold += 1; cfg.save(); return true; }
 			if (inside(mx, my, minusX, y + 90, 20, 20)) { cfg.attackIntervalTicks -= 1; cfg.save(); return true; }
 			if (inside(mx, my, plusX, y + 90, 20, 20)) { cfg.attackIntervalTicks += 1; cfg.save(); return true; }
-			if (inside(mx, my, px + 10, y + 120, W - 20, 20)) { cfg.pickup = !cfg.pickup; cfg.save(); return true; }
+			if (inside(mx, my, minusX, y + 120, 20, 20)) { cfg.roamSize -= 1; cfg.save(); return true; }
+			if (inside(mx, my, plusX, y + 120, 20, 20)) { cfg.roamSize += 1; cfg.save(); return true; }
+			if (inside(mx, my, px + 10, y + 150, W - 20, 20)) { cfg.pickup = !cfg.pickup; cfg.save(); return true; }
+			if (inside(mx, my, px + 10, y + 180, W - 20, 20)) { cfg.idleJump = !cfg.idleJump; cfg.save(); return true; }
 		} else {
 			int bx = px + 14, by = py + 58 + 76;
 			if (inside(mx, my, bx, by, 140, 22)) {
