@@ -148,7 +148,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 			client.options.forwardKey.setPressed(dist > cfg.attackDistance);
 
 			if (alreadyAimed
-					&& ticksSinceAttack >= MIN_ATTACK_TICKS
+					&& ticksSinceAttack >= cfg.attackIntervalTicks
 					&& player.squaredDistanceTo(target) <= sq(cfg.attackDistance + 0.6)
 					&& player.getAttackCooldownProgress(0.5f) >= 1.0f) {
 				client.interactionManager.attackEntity(player, target);

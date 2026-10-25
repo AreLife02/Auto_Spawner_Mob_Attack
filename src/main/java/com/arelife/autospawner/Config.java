@@ -21,6 +21,8 @@ public class Config {
 	public double searchRange = 6.0;
 	/** Hedefe bu kadar yaklaşılır (blok). */
 	public double attackDistance = 1.0;
+	/** Vuruşlar arası en az tik (20 tik = 1 sn). */
+	public int attackIntervalTicks = 15;
 	/** Açlık bu değer ve altına inince yemek yenir (20 = tam dolu, 14 = 7 kemik). */
 	public int hungerThreshold = 14;
 	/** Düşen eşyaları topla. */
@@ -55,6 +57,7 @@ public class Config {
 		searchRange = Math.max(2.0, Math.min(12.0, searchRange));
 		attackDistance = Math.max(0.5, Math.min(3.0, attackDistance));
 		hungerThreshold = Math.max(1, Math.min(19, hungerThreshold));
+		attackIntervalTicks = Math.max(10, Math.min(40, attackIntervalTicks));
 	}
 
 	public void save() {

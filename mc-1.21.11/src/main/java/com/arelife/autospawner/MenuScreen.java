@@ -33,7 +33,7 @@ public class MenuScreen extends Screen {
 	private static final int RED = 0xFFFF5555;
 
 	private static final int W = 340;
-	private static final int H = 230;
+	private static final int H = 250;
 	private static final int ROW_H = 20;
 
 	private static List<EntityType<?>> ALL_MOBS;
@@ -179,8 +179,10 @@ public class MenuScreen extends Screen {
 		settingRow(ctx, mx, my, y + 30, "Vuruş mesafesi", fmt(cfg.attackDistance) + " blok");
 		settingRow(ctx, mx, my, y + 60, "Açlık eşiği", cfg.hungerThreshold + " (" + fmt(cfg.hungerThreshold / 2.0) + " kemik)");
 
+		settingRow(ctx, mx, my, y + 90, "Vuruş aralığı", cfg.attackIntervalTicks + " tik");
+
 		// eşya toplama anahtarı
-		int ry = y + 90;
+		int ry = y + 120;
 		ctx.drawText(textRenderer, "Eşya topla", px + 14, ry + 6, TEXT, false);
 		int kx = px + W - 10 - 34;
 		boolean on = cfg.pickup;
@@ -262,7 +264,9 @@ public class MenuScreen extends Screen {
 			if (inside(mx, my, plusX, y + 30, 20, 20)) { cfg.attackDistance += 0.25; cfg.save(); return true; }
 			if (inside(mx, my, minusX, y + 60, 20, 20)) { cfg.hungerThreshold -= 1; cfg.save(); return true; }
 			if (inside(mx, my, plusX, y + 60, 20, 20)) { cfg.hungerThreshold += 1; cfg.save(); return true; }
-			if (inside(mx, my, px + 10, y + 90, W - 20, 20)) { cfg.pickup = !cfg.pickup; cfg.save(); return true; }
+			if (inside(mx, my, minusX, y + 90, 20, 20)) { cfg.attackIntervalTicks -= 1; cfg.save(); return true; }
+			if (inside(mx, my, plusX, y + 90, 20, 20)) { cfg.attackIntervalTicks += 1; cfg.save(); return true; }
+			if (inside(mx, my, px + 10, y + 120, W - 20, 20)) { cfg.pickup = !cfg.pickup; cfg.save(); return true; }
 		} else {
 			int bx = px + 14, by = py + 58 + 76;
 			if (inside(mx, my, bx, by, 140, 22)) {
