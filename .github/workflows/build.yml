@@ -37,7 +37,16 @@ jobs:
 
       - name: Build
         working-directory: ${{ matrix.dir }}
-        run: gradle build --stacktrace
+        run: |
+          set +e
+          gradle build --stacktrace > build.log 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            msg=$(grep -E "error:|What went wrong|Could not|Caused by|symbol:|location:|Unsupported|not found|FAILURE" -A1 build.log | grep -v "^--" | head -60 | cut -c1-220 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=build-errors::${msg}"
+          fi
+          tail -30 build.log
+          exit $code
 
       - uses: actions/upload-artifact@v4
         with:
