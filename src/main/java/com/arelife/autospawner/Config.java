@@ -25,10 +25,6 @@ public class Config {
 	public int attackIntervalTicks = 15;
 	/** Açlık bu değer ve altına inince yemek yenir (20 = tam dolu, 14 = 7 kemik). */
 	public int hungerThreshold = 14;
-	/** Gezinme alanı kenar uzunluğu (blok). 0 = kapalı. */
-	public int roamSize = 4;
-	/** Boşken ara sıra zıpla. */
-	public boolean idleJump = true;
 	/** Düşen eşyaları topla. */
 	public boolean pickup = true;
 
@@ -62,7 +58,6 @@ public class Config {
 		attackDistance = Math.max(0.5, Math.min(3.0, attackDistance));
 		hungerThreshold = Math.max(1, Math.min(19, hungerThreshold));
 		attackIntervalTicks = Math.max(10, Math.min(40, attackIntervalTicks));
-		roamSize = Math.max(0, Math.min(8, roamSize));
 	}
 
 	public void save() {
