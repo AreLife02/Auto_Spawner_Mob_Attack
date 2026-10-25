@@ -84,11 +84,6 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		if (!enabled || client.player == null || client.world == null || client.interactionManager == null) {
 			return;
 		}
-		if (client.currentScreen != null) {
-			releaseKeys(client);
-			return;
-		}
-
 		tickCounter++;
 		if (ticksSinceAttack < 1000) ticksSinceAttack++;
 		if (tickCounter % 20 == 0 && !eating) {
@@ -132,6 +127,18 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		// ---- Kılıç ----
 		if (player.getInventory().selectedSlot != SWORD_SLOT) {
 			player.getInventory().selectedSlot = SWORD_SLOT;
+		}
+
+		// ---- Eşya toplama dönemi: her 100 tikte (5 sn) ilk 40 tik (2 sn) ----
+		if (cfg.pickup && tickCounter % 100 < 40) {
+			ItemEntity drop = findItem(client, cfg);
+			if (drop != null) {
+				aimedTargetId = -1;
+				lookAt(player, drop.getPos());
+				keysHeldByMod = true;
+				client.options.forwardKey.setPressed(horizontalDistance(player, drop) > 0.4);
+				return;
+			}
 		}
 
 		// ---- Hedef ----
