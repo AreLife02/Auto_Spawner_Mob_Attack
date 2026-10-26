@@ -38,7 +38,6 @@ Settings are saved to `config/auto_spawner_mob_attack.json`.
 | `mc26.1.2` | 26.1, 26.1.1, 26.1.2 |
 | `mc26.2` | 26.2 |
 | `mc26.3` | 26.3 |
-| `mc26.4` | 26.4 |
 
 ## Build
 Every push builds all versions with GitHub Actions and updates the **Latest build** release.
