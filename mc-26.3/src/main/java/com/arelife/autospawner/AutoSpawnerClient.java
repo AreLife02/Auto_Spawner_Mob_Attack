@@ -8,7 +8,9 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.component.SwingAnimation;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.tags.ItemTags;
@@ -76,12 +78,12 @@ public class AutoSpawnerClient implements ClientModInitializer {
 			enabled = !enabled;
 			if (!enabled) releaseKeys(client);
 			if (client.player != null) {
-				client.gui.setOverlayMessage(statusText(), false);
+				client.player.sendOverlayMessage(statusText());
 			}
 		}
 		while (menuKey.consumeClick()) {
-			if (client.screen == null) {
-				client.setScreen(new MenuScreen());
+			if (client.gui.screen() == null) {
+				client.gui.setScreen(new MenuScreen());
 			}
 		}
 
@@ -91,7 +93,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		tickCounter++;
 		if (ticksSinceAttack < 1000) ticksSinceAttack++;
 		if (tickCounter % 20 == 0 && !eating) {
-			client.gui.setOverlayMessage(statusText(), false);
+			client.player.sendOverlayMessage(statusText());
 		}
 
 		Config cfg = Config.get();
@@ -165,7 +167,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 					&& player.distanceToSqr(target) <= sq(cfg.attackDistance + 0.6)
 					&& player.getAttackStrengthScale(0.5f) >= 1.0f) {
 				client.gameMode.attack(player, target);
-				player.swing(InteractionHand.MAIN_HAND);
+				player.swing(InteractionHand.MAIN_HAND, player.getItemInHand(InteractionHand.MAIN_HAND).getOrDefault(DataComponents.SWING_ANIMATION, SwingAnimation.DEFAULT), false);
 				attackCount++;
 				ticksSinceAttack = 0;
 			}
@@ -275,7 +277,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		releaseKeys(client);
 		if (client.player != null) {
 			client.player.getInventory().setSelectedSlot(restoreSlot(client.player));
-			client.gui.setOverlayMessage(Component.literal(message).withStyle(ChatFormatting.RED), false);
+			client.player.sendOverlayMessage(Component.literal(message).withStyle(ChatFormatting.RED));
 		}
 	}
 
