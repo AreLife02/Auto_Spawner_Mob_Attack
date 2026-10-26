@@ -25,7 +25,6 @@ jobs:
           - { name: '26.1.2', dir: 'mc-26.1', gradle: '9.8.0', java: '25' }
           - { name: '26.2', dir: 'mc-26.2', gradle: '9.8.0', java: '25' }
           - { name: '26.3', dir: 'mc-26.3', gradle: '9.8.0', java: '25' }
-          - { name: '26.4', dir: 'mc-26.4', gradle: '9.8.0', java: '25' }
     steps:
       - uses: actions/checkout@v4
 
@@ -55,3 +54,19 @@ jobs:
         with:
           name: auto-spawner-mob-attack-${{ matrix.name }}
           path: ${{ matrix.dir }}/build/libs/*.jar
+
+      - name: Inspect
+        if: failure()
+        run: |
+          JAR=""
+          for f in $(find ~/.gradle -name "*.jar" -size +20M 2>/dev/null); do
+            if unzip -l "$f" 2>/dev/null | grep -q "net/minecraft/client/gui/Gui.class"; then JAR="$f"; break; fi
+          done
+          echo "jar=$JAR"
+          out=""
+          for c in net.minecraft.client.gui.Gui net.minecraft.client.Minecraft com.mojang.blaze3d.platform.InputConstants com.mojang.blaze3d.platform.InputConstants\$Type net.minecraft.client.KeyMapping net.minecraft.world.entity.LivingEntity; do
+            out="$out$(javap -cp "$JAR" -public "$c" 2>&1 | grep -iE "overlay|screen|swing|KEYSYM|KEY_F10|KEY_K\b|InputConstants\.|class |GLFW|static final .*Type|Category|registerKey" | head -25)%0A"
+          done
+          for m in "$(unzip -l "$JAR" | grep -i glfw | head -3)"; do out="$out$m%0A"; done
+          msg=$(echo "$out" | sed 's/$/%0A/' | tr -d '\n' | cut -c1-6000)
+          echo "::error title=inspect::${msg}"
