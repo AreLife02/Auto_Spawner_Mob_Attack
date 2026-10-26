@@ -13,7 +13,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.SpawnEggItem;
-import org.lwjgl.glfw.GLFW;
+import com.mojang.blaze3d.platform.InputConstants;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -401,7 +401,7 @@ public class MenuScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(KeyEvent input) {
-		if (tab <= 1 && input.key() == GLFW.GLFW_KEY_BACKSPACE) {
+		if (tab <= 1 && input.key() == InputConstants.KEY_BACKSPACE) {
 			if (!search.isEmpty()) {
 				search = search.substring(0, search.length() - 1);
 				scroll = 0;

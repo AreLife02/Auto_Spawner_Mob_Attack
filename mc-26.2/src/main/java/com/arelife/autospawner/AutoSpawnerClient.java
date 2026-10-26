@@ -19,7 +19,6 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.Comparator;
 import java.util.List;
@@ -61,9 +60,9 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		Config.get();
 
 		toggleKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-				"key." + ID + ".toggle", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_F10, CATEGORY));
+				"key." + ID + ".toggle", InputConstants.KEY_F10, CATEGORY));
 		menuKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-				"key." + ID + ".menu", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_K, CATEGORY));
+				"key." + ID + ".menu", InputConstants.KEY_K, CATEGORY));
 
 		ClientTickEvents.END_CLIENT_TICK.register(this::onTick);
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
@@ -81,8 +80,8 @@ public class AutoSpawnerClient implements ClientModInitializer {
 			}
 		}
 		while (menuKey.consumeClick()) {
-			if (client.screen == null) {
-				client.setScreen(new MenuScreen());
+			if (client.gui.screen() == null) {
+				client.gui.setScreen(new MenuScreen());
 			}
 		}
 
