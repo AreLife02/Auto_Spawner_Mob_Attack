@@ -1,32 +1,45 @@
 # Auto Spawner Mob Attack
 
-Minecraft **1.21.4** için Fabric istemci modu. Spawner farmlarında hesabın durup mob'lara vurmasını sağlar.
+A client-side Fabric mod for spawner farms. It stands where you put it, hits the mobs you pick, eats when hungry and picks up drops.
 
-> **Sadece izin veren sunucularda kullan.** Çoğu sunucuda otomatik vuruş kural dışıdır. Kullanmadan önce sunucu yetkililerinden izin al.
+> **Use it only on servers that allow it.** Automatic attacking breaks the rules on many servers. Ask the server staff first.
 
-## Ne yapar
-- **F10** ile aç/kapa, **K** ile menüyü açar.
-- Menüden seçtiğin canlıya (varsayılan: Blaze) yürür, bakar ve vurur.
-- Oyunculara ve bloklara dokunmaz.
-- Açlık eşiğin altına inince **8. veya 9. slottaki altın havucu** yer, **1. slottaki kılıca** geri döner.
-- Havuç bitince kendini kapatır ve ekranda (sohbette değil) uyarı gösterir.
-- Canlı yokken yakındaki düşen eşyaları toplar.
+## What it does
+- **F10** turns it on or off, **K** opens the menu (both keys can be changed in Controls).
+- Walks to and attacks the mobs you selected (default: Blaze). It never attacks players and never breaks or places blocks.
+- Finds your sword in the hotbar by itself.
+- Eats any food you selected when your hunger is at or below the level you set.
+- Picks up nearby drops when no mob is around.
+- Turns itself off when health is low, the sword is about to break, the inventory is full or the food runs out. A warning shows above the hotbar.
 
-## Menü
-- **Canlılar:** arama kutusu, spawn yumurtası ikonları, açık/kapalı anahtar. Seçililer üstte toplanır.
-- **Ayarlar:** arama menzili, vuruş mesafesi, açlık eşiği, eşya toplama.
-- **Durum:** açık/kapalı, vuruş sayısı, kalan altın havuç.
+## Menu
+- **Mobs:** search box, spawn egg icons, on/off switches. Spawner mobs are listed first.
+- **Foods:** search box, on/off switches. Common foods are listed first, bad foods are hidden. All foods start selected.
+- **Settings:** search range, attack distance, attack interval, hunger bar, item pickup and the safety stops.
+- **Status:** on/off button, hit counter, food left.
 
-Ayarlar `config/auto_spawner_mob_attack.json` dosyasına otomatik kaydedilir.
+Settings are saved to `config/auto_spawner_mob_attack.json`.
 
-## Kurulum
-1. Fabric Loader ve [Fabric API](https://modrinth.com/mod/fabric-api) (1.21.4) kur.
-2. Bu modun `.jar` dosyasını `mods` klasörüne at.
+## Install
+1. Install [Fabric Loader](https://fabricmc.net/use/) and [Fabric API](https://modrinth.com/mod/fabric-api) for your Minecraft version.
+2. Download the matching jar from the [Releases](../../releases/latest) page and put it in your `mods` folder.
 
-## Derleme
-Her `push`'ta GitHub Actions modu derler. **Actions** sekmesi → son çalışma → **Artifacts** → `auto-spawner-mob-attack`.
-Elle derlemek için: `gradle build` (Java 21 gerekir). Jar `build/libs/` içinde çıkar.
+| Jar | Works on |
+| --- | --- |
+| `mc1.20.4` | 1.20.4 |
+| `mc1.20.6` | 1.20.5, 1.20.6 |
+| `mc1.21.1` | 1.21, 1.21.1 |
+| `mc1.21.3` | 1.21.2, 1.21.3 |
+| `mc1.21.4` | 1.21.4 |
+| `mc1.21.5` | 1.21.5 |
+| `mc1.21.8` | 1.21.6, 1.21.7, 1.21.8 |
+| `mc1.21.10` | 1.21.9, 1.21.10 |
+| `mc1.21.11` | 1.21.11 |
+| `mc26.1.2` | 26.1, 26.1.1, 26.1.2 |
+| `mc26.2` | 26.2 |
+| `mc26.3` | 26.3 |
+| `mc26.4` | 26.4 |
 
-## Notlar
-- Mod her canlıya ayrı davranmaz. Creeper gibi patlayanlara ya da ok atan iskeletlere yaklaşmak canını düşürebilir.
-- Yalnızca 1.21.4 için derlenmiştir.
+## Build
+Every push builds all versions with GitHub Actions and updates the **Latest build** release.
+To build one version yourself, open its folder (the root folder is 1.21.4) and run `gradle build` (Java 21, or Java 25 for 26.x).

@@ -98,6 +98,26 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		Config cfg = Config.get();
 		PlayerEntity player = client.player;
 
+		// ---- Safety checks ----
+		if (cfg.minHealth > 0 && player.getHealth() <= cfg.minHealth) {
+			disableWithMessage(client, "Health too low, mod turned off");
+			return;
+		}
+		if (cfg.stopOnLowDurability) {
+			int sw = findSwordSlot(player);
+			if (sw >= 0) {
+				var sword = player.getInventory().getStack(sw);
+				if (sword.getMaxDamage() > 0 && sword.getMaxDamage() - sword.getDamage() <= 10) {
+					disableWithMessage(client, "Sword is about to break, mod turned off");
+					return;
+				}
+			}
+		}
+		if (cfg.stopOnFullInventory && inventoryFull(player)) {
+			disableWithMessage(client, "Inventory is full, mod turned off");
+			return;
+		}
+
 		// ---- Yemek ----
 		int food = player.getHungerManager().getFoodLevel();
 		if (eating) {
@@ -210,6 +230,15 @@ public class AutoSpawnerClient implements ClientModInitializer {
 	}
 
 	/** First hotbar slot holding a selected food, or -1. */
+	private static boolean inventoryFull(PlayerEntity player) {
+		for (int i = 0; i < 36; i++) {
+			if (player.getInventory().getStack(i).isEmpty()) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	private static int findSwordSlot(PlayerEntity player) {
 		for (int slot = 0; slot < 9; slot++) {
 			if (player.getInventory().getStack(slot).isIn(ItemTags.SWORDS)) {

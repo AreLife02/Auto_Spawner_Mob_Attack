@@ -25,6 +25,7 @@ jobs:
           - { name: '26.1.2', dir: 'mc-26.1', gradle: '9.8.0', java: '25' }
           - { name: '26.2', dir: 'mc-26.2', gradle: '9.8.0', java: '25' }
           - { name: '26.3', dir: 'mc-26.3', gradle: '9.8.0', java: '25' }
+          - { name: '26.4', dir: 'mc-26.4', gradle: '9.8.0', java: '25' }
     steps:
       - uses: actions/checkout@v4
 
@@ -70,3 +71,29 @@ jobs:
           for m in "$(unzip -l "$JAR" | grep -i glfw | head -3)"; do out="$out$m%0A"; done
           msg=$(echo "$out" | sed 's/$/%0A/' | tr -d '\n' | cut -c1-9000)
           echo "::error title=inspect::${msg}"
+
+  release:
+    needs: build
+    if: ${{ !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: jars
+          pattern: auto-spawner-mob-attack-*
+          merge-multiple: true
+
+      - name: List jars
+        run: ls -la jars
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest build
+          target_commitish: ${{ github.sha }}
+          body: |
+            Download the jar that matches your Minecraft version (`mcX.Y.Z` in the file name).
+            Needs Fabric Loader and Fabric API.
+          files: jars/*.jar

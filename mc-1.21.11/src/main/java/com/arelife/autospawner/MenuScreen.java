@@ -35,7 +35,7 @@ public class MenuScreen extends Screen {
 	private static final int RED = 0xFFFF5555;
 
 	private static final int W = 340;
-	private static final int H = 250;
+	private static final int H = 310;
 	private static final int ROW_H = 20;
 
 	private static List<EntityType<?>> ALL_MOBS;
@@ -243,6 +243,16 @@ public class MenuScreen extends Screen {
 		ctx.fill(kx, ry + 3, kx + 28, ry + 15, on ? ACCENT : 0xFF444444);
 		ctx.fill(on ? kx + 16 : kx + 2, ry + 5, on ? kx + 26 : kx + 12, ry + 13, TEXT);
 
+		settingRow(ctx, mx, my, y + 166, "Stop when health is at", cfg.minHealth == 0 ? "Off" : fmt(cfg.minHealth / 2.0) + " hearts");
+		toggleRow(ctx, y + 192, "Stop if sword is about to break", cfg.stopOnLowDurability);
+		toggleRow(ctx, y + 218, "Stop when inventory is full", cfg.stopOnFullInventory);
+	}
+
+	private void toggleRow(DrawContext ctx, int ry, String label, boolean on) {
+		ctx.drawText(textRenderer, label, px + 14, ry + 6, TEXT, false);
+		int kx = px + W - 10 - 34;
+		ctx.fill(kx, ry + 3, kx + 28, ry + 15, on ? ACCENT : 0xFF444444);
+		ctx.fill(on ? kx + 16 : kx + 2, ry + 5, on ? kx + 26 : kx + 12, ry + 13, TEXT);
 	}
 
 	/** Hunger bar: filled drumsticks = hunger level at which the bot starts eating. */
@@ -362,6 +372,10 @@ public class MenuScreen extends Screen {
 			if (inside(mx, my, minusX, y + 60, 20, 20)) { cfg.attackIntervalTicks -= 1; cfg.save(); return true; }
 			if (inside(mx, my, plusX, y + 60, 20, 20)) { cfg.attackIntervalTicks += 1; cfg.save(); return true; }
 			if (inside(mx, my, px + 10, y + 140, W - 20, 20)) { cfg.pickup = !cfg.pickup; cfg.save(); return true; }
+			if (inside(mx, my, minusX, y + 166, 20, 20)) { cfg.minHealth -= 1; cfg.save(); return true; }
+			if (inside(mx, my, plusX, y + 166, 20, 20)) { cfg.minHealth += 1; cfg.save(); return true; }
+			if (inside(mx, my, px + 10, y + 192, W - 20, 20)) { cfg.stopOnLowDurability = !cfg.stopOnLowDurability; cfg.save(); return true; }
+			if (inside(mx, my, px + 10, y + 218, W - 20, 20)) { cfg.stopOnFullInventory = !cfg.stopOnFullInventory; cfg.save(); return true; }
 		} else {
 			int bx = px + 14, by = py + 58 + 76;
 			if (inside(mx, my, bx, by, 140, 22)) {

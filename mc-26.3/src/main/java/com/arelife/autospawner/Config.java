@@ -31,6 +31,12 @@ public class Config {
 	public int hungerThreshold = 14;
 	/** Düşen eşyaları topla. */
 	public boolean pickup = true;
+	/** Turn the mod off when health is at or below this (half hearts). 0 = off. */
+	public int minHealth = 6;
+	/** Turn the mod off when the sword is about to break. */
+	public boolean stopOnLowDurability = true;
+	/** Turn the mod off when the inventory has no free slot. */
+	public boolean stopOnFullInventory = true;
 
 	private static Config instance;
 
@@ -76,6 +82,7 @@ public class Config {
 		searchRange = Math.max(2.0, Math.min(12.0, searchRange));
 		attackDistance = Math.max(0.5, Math.min(3.0, attackDistance));
 		hungerThreshold = Math.max(1, Math.min(19, hungerThreshold));
+		minHealth = Math.max(0, Math.min(19, minHealth));
 		attackIntervalTicks = Math.max(1, Math.min(40, attackIntervalTicks));
 	}
 
