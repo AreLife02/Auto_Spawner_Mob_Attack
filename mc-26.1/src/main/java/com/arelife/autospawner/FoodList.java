@@ -30,7 +30,7 @@ public final class FoodList {
 	}
 
 	private static int rank(Item item) {
-		int i = PRIORITY.indexOf(BuiltInBuiltInRegistries.ITEM.getKey(item).getPath());
+		int i = PRIORITY.indexOf(BuiltInRegistries.ITEM.getKey(item).getPath());
 		return i < 0 ? 1000 : i;
 	}
 
@@ -39,7 +39,7 @@ public final class FoodList {
 			List<Item> list = new ArrayList<>();
 			for (Item item : BuiltInRegistries.ITEM) {
 				if (item.components().has(DataComponents.FOOD)
-						&& !BAD.contains(BuiltInBuiltInRegistries.ITEM.getKey(item).getPath())) {
+						&& !BAD.contains(BuiltInRegistries.ITEM.getKey(item).getPath())) {
 					list.add(item);
 				}
 			}

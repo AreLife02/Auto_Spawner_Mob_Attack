@@ -182,9 +182,9 @@ public class MenuScreen extends Screen {
 			boolean hover = inside(mx, my, sx, ry, W - 20, ROW_H - 2);
 			ctx.fill(sx, ry, px + W - 10, ry + ROW_H - 2, on ? 0xFF3A2A12 : (hover ? HOVER : PANEL_LIGHT));
 
-			SpawnEggItem egg = SpawnEggItem.byId(t);
+			var egg = SpawnEggItem.byId(t).orElse(null);
 			if (egg != null) {
-				ctx.item(new ItemStack(egg), sx + 2, ry);
+				ctx.item(new ItemStack(egg.value()), sx + 2, ry);
 			}
 			ctx.text(font, nameOf(t), sx + 24, ry + 5, on ? ACCENT : TEXT, false);
 
@@ -391,8 +391,8 @@ public class MenuScreen extends Screen {
 
 	@Override
 	public boolean charTyped(CharacterEvent input) {
-		if (tab <= 1 && input.isValidChar() && search.length() < 24) {
-			search += input.asString();
+		if (tab <= 1 && input.codepoint() >= 32 && input.codepoint() != 127 && search.length() < 24) {
+			search += new String(Character.toChars(input.codepoint()));
 			scroll = 0;
 			return true;
 		}

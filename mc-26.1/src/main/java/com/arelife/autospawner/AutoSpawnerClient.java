@@ -77,7 +77,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 			enabled = !enabled;
 			if (!enabled) releaseKeys(client);
 			if (client.player != null) {
-				client.player.displayClientMessage(statusText(), true);
+				client.gui.setOverlayMessage(statusText(), false);
 			}
 		}
 		while (menuKey.consumeClick()) {
@@ -92,7 +92,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		tickCounter++;
 		if (ticksSinceAttack < 1000) ticksSinceAttack++;
 		if (tickCounter % 20 == 0 && !eating) {
-			client.player.displayClientMessage(statusText(), true);
+			client.gui.setOverlayMessage(statusText(), false);
 		}
 
 		Config cfg = Config.get();
@@ -276,7 +276,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		releaseKeys(client);
 		if (client.player != null) {
 			client.player.getInventory().setSelectedSlot(restoreSlot(client.player));
-			client.player.displayClientMessage(Component.literal(message).withStyle(ChatFormatting.RED), true);
+			client.gui.setOverlayMessage(Component.literal(message).withStyle(ChatFormatting.RED), false);
 		}
 	}
 
