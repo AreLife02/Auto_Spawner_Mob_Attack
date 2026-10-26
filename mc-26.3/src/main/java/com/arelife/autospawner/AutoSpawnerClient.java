@@ -8,7 +8,6 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.component.SwingAnimation;
 import net.minecraft.network.chat.Component;
@@ -167,7 +166,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 					&& player.distanceToSqr(target) <= sq(cfg.attackDistance + 0.6)
 					&& player.getAttackStrengthScale(0.5f) >= 1.0f) {
 				client.gameMode.attack(player, target);
-				player.swing(InteractionHand.MAIN_HAND, player.getItemInHand(InteractionHand.MAIN_HAND).getOrDefault(DataComponents.SWING_ANIMATION, SwingAnimation.DEFAULT), false);
+				player.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT, false);
 				attackCount++;
 				ticksSinceAttack = 0;
 			}
