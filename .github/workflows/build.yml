@@ -23,6 +23,9 @@ jobs:
           - { name: '1.21.10', dir: 'mc-1.21.10', gradle: '9.2.1', java: '21' }
           - { name: '1.21.11', dir: 'mc-1.21.11', gradle: '9.2.1', java: '21' }
           - { name: '26.1.2', dir: 'mc-26.1', gradle: '9.8.0', java: '25' }
+          - { name: '26.2', dir: 'mc-26.2', gradle: '9.8.0', java: '25' }
+          - { name: '26.3', dir: 'mc-26.3', gradle: '9.8.0', java: '25' }
+          - { name: '26.4', dir: 'mc-26.4', gradle: '9.8.0', java: '25' }
     steps:
       - uses: actions/checkout@v4
 
