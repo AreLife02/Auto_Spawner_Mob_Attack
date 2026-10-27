@@ -39,6 +39,15 @@ Settings are saved to `config/auto_spawner_mob_attack.json`.
 | `mc26.2` | 26.2 |
 | `mc26.3` | 26.3 |
 
+## FAQ
+**Is this allowed on servers?** Only if the server staff allow it. Many servers ban automatic attacking. Singleplayer is always fine.
+
+**Does it work with other mods?** It only needs Fabric API. It is not tested with other automation mods.
+
+**The mod turned itself off.** Look above the hotbar: it says why (low health, sword about to break, full inventory or no food).
+
+**Where are my settings?** `config/auto_spawner_mob_attack.json`. Delete it to reset everything.
+
 ## Build
 Every push builds all versions with GitHub Actions. The jars are published in a release named after `mod_version` (for example `v1.1.0`).
 To build one version yourself, open its folder (the root folder is 1.21.4) and run `gradle build` (Java 17 for 1.20.4, Java 21 for 1.20.6-1.21.11, Java 25 for 26.x).
