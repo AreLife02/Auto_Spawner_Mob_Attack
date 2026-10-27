@@ -40,6 +40,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 
 	public static boolean enabled = false;
 	public static int attackCount = 0;
+	private static long runningSince = 0;
 
 	private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(ID, "main"));
 
@@ -82,6 +83,9 @@ public class AutoSpawnerClient implements ClientModInitializer {
 				client.setScreen(new MenuScreen());
 			}
 		}
+
+		if (enabled && runningSince == 0) runningSince = System.currentTimeMillis();
+		if (!enabled) runningSince = 0;
 
 		if (!enabled || client.player == null || client.level == null || client.gameMode == null) {
 			return;
@@ -278,6 +282,12 @@ public class AutoSpawnerClient implements ClientModInitializer {
 			}
 		}
 		return -1;
+	}
+
+	public static String uptimeText() {
+		if (runningSince == 0) return "-";
+		long sec = (System.currentTimeMillis() - runningSince) / 1000;
+		return String.format("%d:%02d:%02d", sec / 3600, (sec / 60) % 60, sec % 60);
 	}
 
 	public static int foodLeft() {

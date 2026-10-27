@@ -36,6 +36,7 @@ public class MenuScreen extends Screen {
 	private static final int ROW_H = 20;
 
 	private static List<EntityType<?>> ALL_MOBS;
+	private static final String VERSION = "v" + net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer(AutoSpawnerClient.ID).map(c -> c.getMetadata().getVersion().getFriendlyString()).orElse("");
 	/** Mobs that normally come from spawners first. */
 	private static final List<String> MOB_PRIORITY = List.of("blaze", "zombie", "skeleton", "spider", "cave_spider", "silverfish", "magma_cube", "slime", "creeper", "enderman", "zombified_piglin", "wither_skeleton", "husk", "stray", "drowned", "witch", "pig", "cow", "chicken", "sheep");
 
@@ -53,6 +54,8 @@ public class MenuScreen extends Screen {
 	protected void init() {
 		px = (width - W) / 2;
 		py = (height - H) / 2;
+		openedAt = System.currentTimeMillis();
+		rebuildLists();
 	}
 
 	@Override
@@ -126,7 +129,10 @@ public class MenuScreen extends Screen {
 		ctx.fill(px - 1, py - 1, px + W + 1, py + H + 1, ACCENT);
 		ctx.fill(px, py, px + W, py + H, PANEL);
 
-		ctx.drawText(textRenderer, "AUTO SPAWNER MOB ATTACK", px + 10, py + 8, ACCENT, true);
+		ctx.drawText(textRenderer, "AUTO SPAWNER MOB ATTACK " + VERSION, px + 10, py + 8, ACCENT, true);
+		boolean on = AutoSpawnerClient.enabled;
+		ctx.fill(px + W - 48, py + 5, px + W - 10, py + 19, on ? 0xFF1F5A1F : 0xFF5A1F1F);
+		ctx.drawText(textRenderer, on ? "ON" : "OFF", px + W - 29 - textRenderer.getWidth(on ? "ON" : "OFF") / 2, py + 8, on ? GREEN : RED, false);
 
 		String[] tabs = {"Mobs", "Foods", "Settings", "Status"};
 		int tabW = (W - 20) / 4;
@@ -156,7 +162,7 @@ public class MenuScreen extends Screen {
 		String shown = search.isEmpty() ? "Search... (type to search)" : search + (System.currentTimeMillis() / 500 % 2 == 0 ? "_" : "");
 		ctx.drawText(textRenderer, shown, sx + 6, sy + 6, search.isEmpty() ? TEXT_DIM : TEXT, false);
 
-		List<EntityType<?>> list = filteredMobs();
+		List<EntityType<?>> list = mobView;
 		int rows = visibleRows();
 		int maxScroll = Math.max(0, list.size() - rows);
 		scroll = Math.max(0, Math.min(maxScroll, scroll));
@@ -183,10 +189,11 @@ public class MenuScreen extends Screen {
 			ctx.fill(on ? kx + 16 : kx + 2, ry + 5, on ? kx + 26 : kx + 12, ry + 13, TEXT);
 		}
 
+		drawScrollbar(ctx, list.size(), rows);
 		if (list.isEmpty()) {
 			ctx.drawText(textRenderer, "No matching mobs", sx + 6, listTop() + 6, TEXT_DIM, false);
 		}
-		ctx.drawText(textRenderer, "Selected: " + cfg.mobs.size(), px + W - 70, py + 10, TEXT_DIM, false);
+		ctx.drawText(textRenderer, "Selected: " + cfg.mobs.size(), px + W - 130, py + 10, TEXT_DIM, false);
 	}
 
 	private void renderFoods(DrawContext ctx, int mx, int my) {
@@ -197,7 +204,7 @@ public class MenuScreen extends Screen {
 		String shown = search.isEmpty() ? "Search foods... (type to search)" : search + (System.currentTimeMillis() / 500 % 2 == 0 ? "_" : "");
 		ctx.drawText(textRenderer, shown, sx + 6, sy + 6, search.isEmpty() ? TEXT_DIM : TEXT, false);
 
-		List<Item> list = filteredFoods();
+		List<Item> list = foodView;
 		int rows = visibleRows();
 		int maxScroll = Math.max(0, list.size() - rows);
 		scroll = Math.max(0, Math.min(maxScroll, scroll));
@@ -216,31 +223,21 @@ public class MenuScreen extends Screen {
 			ctx.fill(kx, ry + 3, kx + 28, ry + 15, on ? ACCENT : 0xFF444444);
 			ctx.fill(on ? kx + 16 : kx + 2, ry + 5, on ? kx + 26 : kx + 12, ry + 13, TEXT);
 		}
+		drawScrollbar(ctx, list.size(), rows);
 		if (list.isEmpty()) {
 			ctx.drawText(textRenderer, "No matching foods", sx + 6, listTop() + 6, TEXT_DIM, false);
 		}
-		ctx.drawText(textRenderer, "Selected: " + cfg.foods.size(), px + W - 70, py + 10, TEXT_DIM, false);
+		ctx.drawText(textRenderer, "Selected: " + cfg.foods.size(), px + W - 130, py + 10, TEXT_DIM, false);
 	}
 
 	private void renderSettings(DrawContext ctx, int mx, int my) {
 		Config cfg = Config.get();
 		int y = py + 56;
-		settingRow(ctx, mx, my, y, "Search range", fmt(cfg.searchRange) + " blocks");
-		settingRow(ctx, mx, my, y + 30, "Attack distance", fmt(cfg.attackDistance) + " blocks");
-		settingRow(ctx, mx, my, y + 90, "Eat when hunger is at", (cfg.hungerThreshold / 2.0 == Math.floor(cfg.hungerThreshold / 2.0) ? String.valueOf(cfg.hungerThreshold / 2) : fmt(cfg.hungerThreshold / 2.0)) + " / 10");
+		for (int id = 0; id < SLIDERS.length; id++) {
+			sliderRow(ctx, mx, my, id);
+		}
 		drawHungerBar(ctx, px + 14, y + 114, cfg.hungerThreshold);
-
-		settingRow(ctx, mx, my, y + 60, "Attack interval", cfg.attackIntervalTicks + " ticks");
-
-		// item pickup switch
-		int ry = y + 140;
-		ctx.drawText(textRenderer, "Pick up items", px + 14, ry + 6, TEXT, false);
-		int kx = px + W - 10 - 34;
-		boolean on = cfg.pickup;
-		ctx.fill(kx, ry + 3, kx + 28, ry + 15, on ? ACCENT : 0xFF444444);
-		ctx.fill(on ? kx + 16 : kx + 2, ry + 5, on ? kx + 26 : kx + 12, ry + 13, TEXT);
-
-		settingRow(ctx, mx, my, y + 166, "Stop when health is at", cfg.minHealth == 0 ? "Off" : fmt(cfg.minHealth / 2.0) + " hearts");
+		toggleRow(ctx, y + 140, "Pick up items", cfg.pickup);
 		toggleRow(ctx, y + 192, "Stop if sword is about to break", cfg.stopOnLowDurability);
 		toggleRow(ctx, y + 218, "Stop when inventory is full", cfg.stopOnFullInventory);
 	}
@@ -267,37 +264,137 @@ public class MenuScreen extends Screen {
 		}
 	}
 
-	private void settingRow(DrawContext ctx, int mx, int my, int y, String label, String value) {
-		ctx.drawText(textRenderer, label, px + 14, y + 6, TEXT, false);
-		int minusX = px + W - 150;
-		int plusX = px + W - 36;
-		smallButton(ctx, mx, my, minusX, y, "-");
-		ctx.drawCenteredTextWithShadow(textRenderer, value, (minusX + 20 + plusX) / 2, y + 6, ACCENT);
-		smallButton(ctx, mx, my, plusX, y, "+");
+
+	// ------------------------------------------------------------ sliders
+
+	private static final double[][] SLIDERS = {{2, 12, 1}, {0.5, 3.0, 0.25}, {1, 40, 1}, {1, 19, 1}, {0, 19, 1}};
+	private static final int[] SLIDER_Y = {0, 30, 60, 90, 166};
+	private static final String[] SLIDER_LABEL = {"Search range", "Attack distance", "Attack interval", "Eat when hunger is at", "Stop when health is at"};
+
+	private int sliderX() {
+		return px + 150;
 	}
 
-	private void smallButton(DrawContext ctx, int mx, int my, int x, int y, String label) {
-		boolean hover = inside(mx, my, x, y, 20, 20);
-		ctx.fill(x, y, x + 20, y + 20, hover ? ACCENT_DIM : PANEL_LIGHT);
-		ctx.drawCenteredTextWithShadow(textRenderer, label, x + 10, y + 6, TEXT);
+	private static final int SLIDER_W = 120;
+
+	private static double sliderGet(Config c, int id) {
+		return switch (id) {
+			case 0 -> c.searchRange;
+			case 1 -> c.attackDistance;
+			case 2 -> c.attackIntervalTicks;
+			case 3 -> c.hungerThreshold;
+			default -> c.minHealth;
+		};
+	}
+
+	private static void sliderSet(Config c, int id, double v) {
+		switch (id) {
+			case 0 -> c.searchRange = v;
+			case 1 -> c.attackDistance = v;
+			case 2 -> c.attackIntervalTicks = (int) Math.round(v);
+			case 3 -> c.hungerThreshold = (int) Math.round(v);
+			default -> c.minHealth = (int) Math.round(v);
+		}
+		c.save();
+	}
+
+	private static String sliderText(Config c, int id) {
+		return switch (id) {
+			case 0 -> fmt(c.searchRange) + " blocks";
+			case 1 -> fmt(c.attackDistance) + " blocks";
+			case 2 -> c.attackIntervalTicks + " ticks";
+			case 3 -> fmt(c.hungerThreshold / 2.0) + " / 10";
+			default -> c.minHealth == 0 ? "Off" : fmt(c.minHealth / 2.0) + " hearts";
+		};
+	}
+
+	private void sliderRow(DrawContext ctx, int mx, int my, int id) {
+		Config cfg = Config.get();
+		int y = py + 56 + SLIDER_Y[id];
+		ctx.drawText(textRenderer, SLIDER_LABEL[id], px + 14, y + 6, TEXT, false);
+		double[] d = SLIDERS[id];
+		double frac = (sliderGet(cfg, id) - d[0]) / (d[1] - d[0]);
+		frac = Math.max(0, Math.min(1, frac));
+		int x0 = sliderX();
+		boolean hover = inside(mx, my, x0 - 4, y, SLIDER_W + 8, 20);
+		ctx.fill(x0, y + 8, x0 + SLIDER_W, y + 12, PANEL_LIGHT);
+		ctx.fill(x0, y + 8, x0 + (int) (SLIDER_W * frac), y + 12, hover ? ACCENT : ACCENT_DIM);
+		int tx = x0 + (int) (SLIDER_W * frac);
+		ctx.fill(tx - 2, y + 4, tx + 2, y + 16, ACCENT);
+		ctx.drawText(textRenderer, sliderText(cfg, id), x0 + SLIDER_W + 10, y + 6, ACCENT, false);
+	}
+
+	/** Returns the slider under the mouse, or -1. */
+	private int sliderAt(int mx, int my) {
+		for (int id = 0; id < SLIDERS.length; id++) {
+			if (inside(mx, my, sliderX() - 4, py + 56 + SLIDER_Y[id], SLIDER_W + 8, 20)) {
+				return id;
+			}
+		}
+		return -1;
+	}
+
+	private void sliderClick(int id, int mx) {
+		double[] d = SLIDERS[id];
+		double frac = Math.max(0, Math.min(1, (mx - sliderX()) / (double) SLIDER_W));
+		double v = d[0] + frac * (d[1] - d[0]);
+		v = Math.round((v - d[0]) / d[2]) * d[2] + d[0];
+		sliderSet(Config.get(), id, v);
+	}
+
+	// ------------------------------------------------------------ list helpers
+
+	private List<EntityType<?>> mobView = new ArrayList<>();
+	private List<Item> foodView = new ArrayList<>();
+	private long openedAt = 0;
+
+	/** Sorts the lists once (on open and when the search text changes) so rows do not jump around. */
+	private void rebuildLists() {
+		mobView = filteredMobs();
+		foodView = filteredFoods();
+	}
+
+	private void drawScrollbar(DrawContext ctx, int total, int rows) {
+		if (total <= rows) return;
+		int x = px + W - 8;
+		int top = listTop();
+		int track = rows * ROW_H - 2;
+		ctx.fill(x, top, x + 3, top + track, PANEL_LIGHT);
+		int thumb = Math.max(12, track * rows / total);
+		int maxScroll = total - rows;
+		int pos = (track - thumb) * scroll / Math.max(1, maxScroll);
+		ctx.fill(x, top + pos, x + 3, top + pos + thumb, ACCENT);
 	}
 
 	private void renderStatus(DrawContext ctx, int mx, int my) {
 		Config cfg = Config.get();
 		int y = py + 58;
-		ctx.drawText(textRenderer, "State: ", px + 14, y, TEXT, false);
-		ctx.drawText(textRenderer, AutoSpawnerClient.enabled ? "ON" : "OFF", px + 56, y, AutoSpawnerClient.enabled ? GREEN : RED, false);
-		ctx.drawText(textRenderer, "Hits: " + AutoSpawnerClient.attackCount, px + 14, y + 16, TEXT, false);
-		ctx.drawText(textRenderer, "Food left: " + AutoSpawnerClient.foodLeft(), px + 14, y + 32, TEXT, false);
-		ctx.drawText(textRenderer, "Selected mobs: " + cfg.mobs.size(), px + 14, y + 48, TEXT, false);
+		String[][] cards = {
+				{"State", AutoSpawnerClient.enabled ? "ON" : "OFF"},
+				{"Hits", String.valueOf(AutoSpawnerClient.attackCount)},
+				{"Food left", String.valueOf(AutoSpawnerClient.foodLeft())},
+				{"Running time", AutoSpawnerClient.uptimeText()},
+				{"Selected mobs", String.valueOf(cfg.mobs.size())},
+				{"Selected foods", String.valueOf(cfg.foods.size())},
+		};
+		int cw = (W - 30) / 2;
+		for (int i = 0; i < cards.length; i++) {
+			int cx = px + 10 + (i % 2) * (cw + 10);
+			int cy = y + (i / 2) * 46;
+			ctx.fill(cx, cy, cx + cw, cy + 40, PANEL_LIGHT);
+			ctx.fill(cx, cy, cx + 2, cy + 40, ACCENT);
+			ctx.drawText(textRenderer, cards[i][0], cx + 10, cy + 7, TEXT_DIM, false);
+			int color = i == 0 ? (AutoSpawnerClient.enabled ? GREEN : RED) : TEXT;
+			ctx.drawText(textRenderer, cards[i][1], cx + 10, cy + 22, color, false);
+		}
 
-		int bx = px + 14, by = y + 76, bw = 140;
-		boolean hover = inside(mx, my, bx, by, bw, 22);
-		ctx.fill(bx, by, bx + bw, by + 22, hover ? ACCENT : ACCENT_DIM);
-		ctx.drawCenteredTextWithShadow(textRenderer, AutoSpawnerClient.enabled ? "Turn off" : "Turn on", bx + bw / 2, by + 7, TEXT);
+		int bx = px + 10, by = y + 3 * 46 + 4, bw = W - 20;
+		boolean hover = inside(mx, my, bx, by, bw, 24);
+		ctx.fill(bx, by, bx + bw, by + 24, hover ? ACCENT : ACCENT_DIM);
+		ctx.drawText(textRenderer, AutoSpawnerClient.enabled ? "Turn off" : "Turn on", bx + bw / 2 - textRenderer.getWidth(AutoSpawnerClient.enabled ? "Turn off" : "Turn on") / 2, by + 8, TEXT, false);
 	}
 
-	// ------------------------------------------------------------ girdi
+	// ------------------------------------------------------------ input
 
 	@Override
 	public boolean mouseClicked(double mxD, double myD, int button) {
@@ -311,12 +408,13 @@ public class MenuScreen extends Screen {
 				tab = i;
 				scroll = 0;
 				search = "";
+				rebuildLists();
 				return true;
 			}
 		}
 
 		if (tab == 0) {
-			List<EntityType<?>> list = filteredMobs();
+			List<EntityType<?>> list = mobView;
 			int rows = visibleRows();
 			for (int i = 0; i < rows; i++) {
 				int idx = scroll + i;
@@ -332,7 +430,7 @@ public class MenuScreen extends Screen {
 				}
 			}
 		} else if (tab == 1) {
-			List<Item> list = filteredFoods();
+			List<Item> list = foodView;
 			int rows = visibleRows();
 			for (int i = 0; i < rows; i++) {
 				int idx = scroll + i;
@@ -349,14 +447,8 @@ public class MenuScreen extends Screen {
 			}
 		} else if (tab == 2) {
 			int y = py + 56;
-			int minusX = px + W - 150;
-			int plusX = px + W - 36;
-			if (inside(mx, my, minusX, y, 20, 20)) { cfg.searchRange -= 1; cfg.save(); return true; }
-			if (inside(mx, my, plusX, y, 20, 20)) { cfg.searchRange += 1; cfg.save(); return true; }
-			if (inside(mx, my, minusX, y + 30, 20, 20)) { cfg.attackDistance -= 0.25; cfg.save(); return true; }
-			if (inside(mx, my, plusX, y + 30, 20, 20)) { cfg.attackDistance += 0.25; cfg.save(); return true; }
-			if (inside(mx, my, minusX, y + 90, 20, 20)) { cfg.hungerThreshold -= 1; cfg.save(); return true; }
-			if (inside(mx, my, plusX, y + 90, 20, 20)) { cfg.hungerThreshold += 1; cfg.save(); return true; }
+			int sid = sliderAt(mx, my);
+			if (sid >= 0) { sliderClick(sid, mx); return true; }
 			for (int i = 0; i < 10; i++) {
 				int ix = px + 14 + i * 18;
 				if (inside(mx, my, ix, y + 114, 18, 18)) {
@@ -366,16 +458,12 @@ public class MenuScreen extends Screen {
 					return true;
 				}
 			}
-			if (inside(mx, my, minusX, y + 60, 20, 20)) { cfg.attackIntervalTicks -= 1; cfg.save(); return true; }
-			if (inside(mx, my, plusX, y + 60, 20, 20)) { cfg.attackIntervalTicks += 1; cfg.save(); return true; }
 			if (inside(mx, my, px + 10, y + 140, W - 20, 20)) { cfg.pickup = !cfg.pickup; cfg.save(); return true; }
-			if (inside(mx, my, minusX, y + 166, 20, 20)) { cfg.minHealth -= 1; cfg.save(); return true; }
-			if (inside(mx, my, plusX, y + 166, 20, 20)) { cfg.minHealth += 1; cfg.save(); return true; }
 			if (inside(mx, my, px + 10, y + 192, W - 20, 20)) { cfg.stopOnLowDurability = !cfg.stopOnLowDurability; cfg.save(); return true; }
 			if (inside(mx, my, px + 10, y + 218, W - 20, 20)) { cfg.stopOnFullInventory = !cfg.stopOnFullInventory; cfg.save(); return true; }
 		} else {
-			int bx = px + 14, by = py + 58 + 76;
-			if (inside(mx, my, bx, by, 140, 22)) {
+			int bx = px + 10, by = py + 58 + 3 * 46 + 4;
+			if (inside(mx, my, bx, by, W - 20, 24)) {
 				AutoSpawnerClient.enabled = !AutoSpawnerClient.enabled;
 				return true;
 			}
@@ -385,6 +473,15 @@ public class MenuScreen extends Screen {
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+		if (tab == 2) {
+			int sid = sliderAt((int) mouseX, (int) mouseY);
+			if (sid >= 0) {
+				double[] d = SLIDERS[sid];
+				double v = sliderGet(Config.get(), sid) + Math.signum(verticalAmount) * d[2];
+				sliderSet(Config.get(), sid, Math.max(d[0], Math.min(d[1], v)));
+				return true;
+			}
+		}
 		if (tab <= 1) {
 			scroll -= (int) Math.signum(verticalAmount) * 2;
 			return true;
@@ -394,9 +491,10 @@ public class MenuScreen extends Screen {
 
 	@Override
 	public boolean charTyped(char chr, int modifiers) {
-		if (tab <= 1 && chr >= 32 && chr != 127 && search.length() < 24) {
+		if (tab <= 1 && System.currentTimeMillis() - openedAt > 150 && chr >= 32 && chr != 127 && search.length() < 24) {
 			search += chr;
 			scroll = 0;
+			rebuildLists();
 			return true;
 		}
 		return super.charTyped(chr, modifiers);
@@ -404,10 +502,11 @@ public class MenuScreen extends Screen {
 
 	@Override
 	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-		if (tab <= 1 && keyCode == GLFW.GLFW_KEY_BACKSPACE) {
+		if (tab <= 1 && System.currentTimeMillis() - openedAt > 150 && keyCode == GLFW.GLFW_KEY_BACKSPACE) {
 			if (!search.isEmpty()) {
 				search = search.substring(0, search.length() - 1);
 				scroll = 0;
+				rebuildLists();
 			}
 			return true;
 		}
