@@ -10,26 +10,26 @@ import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-/** Ayarlar. Menüden değişince otomatik kaydedilir. */
+/** Settings. Saved automatically when changed in the menu. */
 public class Config {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final Path FILE = FabricLoader.getInstance().getConfigDir().resolve("auto_spawner_mob_attack.json");
 
-	/** Vurulacak canlılar (örn. "minecraft:blaze"). */
+	/** Mobs to attack (e.g. "minecraft:blaze"). */
 	public Set<String> mobs = new LinkedHashSet<>(Set.of("minecraft:blaze"));
-	/** Yenecek yiyecekler (any hotbar slot). */
+	/** Foods to eat (taken from any hotbar slot). */
 	public Set<String> foods = new LinkedHashSet<>();
 	/** False on first run: all foods get selected once. */
 	public boolean foodsInitialized = false;
 	/** Mobs within this distance are searched (blocks). */
 	public double searchRange = 6.0;
-	/** Hedefe bu kadar yaklaşılır (blok). */
+	/** The bot walks up to this distance from the target (blocks). */
 	public double attackDistance = 1.0;
-	/** Vuruşlar arası en az tik (20 tik = 1 sn). */
+	/** Minimum ticks between attacks (20 ticks = 1 second). */
 	public int attackIntervalTicks = 15;
-	/** Açlık bu değer ve altına inince yemek yenir (20 = tam dolu, 14 = 7 kemik). */
+	/** Food is eaten when hunger is at or below this value (20 = full, 14 = 7 drumsticks). */
 	public int hungerThreshold = 14;
-	/** Düşen eşyaları topla. */
+	/** Pick up dropped items. */
 	public boolean pickup = true;
 	/** Turn the mod off when health is at or below this (half hearts). 0 = off. */
 	public int minHealth = 6;
@@ -69,7 +69,9 @@ public class Config {
 		if (foodsInitialized) return;
 		try {
 			for (net.minecraft.item.Item item : FoodList.all()) {
-				foods.add(net.minecraft.registry.Registries.ITEM.getId(item).toString());
+				String id = net.minecraft.registry.Registries.ITEM.getId(item).toString();
+				if (id.equals("minecraft:golden_apple") || id.equals("minecraft:enchanted_golden_apple")) continue; // listed, but off by default
+				foods.add(id);
 			}
 			foodsInitialized = true;
 			save();

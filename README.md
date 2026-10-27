@@ -7,8 +7,8 @@ A client-side Fabric mod for spawner farms. It stands where you put it, hits the
 ## What it does
 - **F10** turns it on or off, **K** opens the menu (both keys can be changed in Controls).
 - Walks to and attacks the mobs you selected (default: Blaze). It never attacks players and never breaks or places blocks.
-- Finds your sword in the hotbar by itself.
-- Eats any food you selected when your hunger is at or below the level you set.
+- Picks the best sword in your hotbar by itself (netherite > diamond > iron > stone > golden > wooden).
+- Eats any selected food found in the hotbar when your hunger is at or below the level you set. Golden apples are listed but off by default.
 - Picks up nearby drops when no mob is around.
 - Turns itself off when health is low, the sword is about to break, the inventory is full or the food runs out. A warning shows above the hotbar.
 
@@ -40,5 +40,5 @@ Settings are saved to `config/auto_spawner_mob_attack.json`.
 | `mc26.3` | 26.3 |
 
 ## Build
-Every push builds all versions with GitHub Actions and updates the **Latest build** release.
-To build one version yourself, open its folder (the root folder is 1.21.4) and run `gradle build` (Java 21, or Java 25 for 26.x).
+Every push builds all versions with GitHub Actions. The jars are published in a release named after `mod_version` (for example `v1.1.0`).
+To build one version yourself, open its folder (the root folder is 1.21.4) and run `gradle build` (Java 17 for 1.20.4, Java 21 for 1.20.6-1.21.11, Java 25 for 26.x).

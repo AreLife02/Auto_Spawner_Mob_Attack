@@ -20,8 +20,8 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Menü (K tuşu). Four tabs: Mobs, Foods, Settings, Status.
- * Widget kullanmaz, her şeyi kendi çizer; böylece sürüm değişikliklerinden az etkilenir.
+ * Menu (K key). Four tabs: Mobs, Foods, Settings, Status.
+ * Uses no widgets, draws everything itself, so it is less affected by version changes.
  */
 public class MenuScreen extends Screen {
 	private static final int ACCENT = 0xFFFF8A1F;
@@ -42,7 +42,7 @@ public class MenuScreen extends Screen {
 	/** Mobs that normally come from spawners first. */
 	private static final List<String> MOB_PRIORITY = List.of("blaze", "zombie", "skeleton", "spider", "cave_spider", "silverfish", "magma_cube", "slime", "creeper", "enderman", "zombified_piglin", "wither_skeleton", "husk", "stray", "drowned", "witch", "pig", "cow", "chicken", "sheep");
 
-	private int tab = 0; // 0 canlılar, 1 ayarlar, 2 durum
+	private int tab = 0; // 0 mobs, 1 foods, 2 settings, 3 status
 	private String search = "";
 	private int scroll = 0;
 
@@ -92,7 +92,7 @@ public class MenuScreen extends Screen {
 				out.add(t);
 			}
 		}
-		// Seçililer üstte
+		// Selected ones first
 		Config cfg = Config.get();
 		out.sort(Comparator.comparing((EntityType<?> t) -> !cfg.mobs.contains(BuiltInRegistries.ENTITY_TYPE.getKey(t).toString()))
 				.thenComparingInt(t -> MOB_PRIORITY.indexOf(BuiltInRegistries.ENTITY_TYPE.getKey(t).getPath()) < 0 ? 1000 : MOB_PRIORITY.indexOf(BuiltInRegistries.ENTITY_TYPE.getKey(t).getPath())));
@@ -129,7 +129,7 @@ public class MenuScreen extends Screen {
 		return (py + H - 22 - listTop()) / ROW_H;
 	}
 
-	// ------------------------------------------------------------ çizim
+	// ------------------------------------------------------------ drawing
 
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
@@ -243,7 +243,7 @@ public class MenuScreen extends Screen {
 
 		settingRow(ctx, mx, my, y + 60, "Attack interval", cfg.attackIntervalTicks + " ticks");
 
-		// eşya toplama anahtarı
+		// item pickup switch
 		int ry = y + 140;
 		ctx.text(font, "Pick up items", px + 14, ry + 6, TEXT, false);
 		int kx = px + W - 10 - 34;
@@ -299,7 +299,7 @@ public class MenuScreen extends Screen {
 		ctx.text(font, "State: ", px + 14, y, TEXT, false);
 		ctx.text(font, AutoSpawnerClient.enabled ? "ON" : "OFF", px + 56, y, AutoSpawnerClient.enabled ? GREEN : RED, false);
 		ctx.text(font, "Hits: " + AutoSpawnerClient.attackCount, px + 14, y + 16, TEXT, false);
-		ctx.text(font, "Food left: " + AutoSpawnerClient.carrotsLeft(), px + 14, y + 32, TEXT, false);
+		ctx.text(font, "Food left: " + AutoSpawnerClient.foodLeft(), px + 14, y + 32, TEXT, false);
 		ctx.text(font, "Selected mobs: " + cfg.mobs.size(), px + 14, y + 48, TEXT, false);
 
 		int bx = px + 14, by = y + 76, bw = 140;
@@ -315,7 +315,7 @@ public class MenuScreen extends Screen {
 		int mx = (int) click.x(), my = (int) click.y();
 		Config cfg = Config.get();
 
-		// sekmeler
+		// tabs
 		int tabW = (W - 20) / 4;
 		for (int i = 0; i < 4; i++) {
 			if (inside(mx, my, px + 10 + i * tabW, py + 24, tabW - 4, 20)) {
@@ -425,7 +425,7 @@ public class MenuScreen extends Screen {
 		return super.keyPressed(input);
 	}
 
-	// ------------------------------------------------------------ yardımcılar
+	// ------------------------------------------------------------ helpers
 
 	private static boolean inside(int mx, int my, int x, int y, int w, int h) {
 		return mx >= x && mx < x + w && my >= y && my < y + h;

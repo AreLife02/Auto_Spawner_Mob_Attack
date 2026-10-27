@@ -25,11 +25,11 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Spawner farmı için istemci modu.
- * - F10: aç/kapa, K: menü.
- * - Listedeki canlıya yaklaşır, bakar, vurur. Oyunculara ve bloklara dokunmaz.
- * - Açlık eşiğin altına inince 8. ve 9. slottaki altın havucu yer.
- * - Canlı yokken yakındaki düşen eşyalara gider.
+ * Client-side helper for spawner farms.
+ * - F10: toggle, K: menu.
+ * - Walks to the selected mobs, looks at them and attacks. Never touches players or blocks.
+ * - Eats the selected food when hunger drops to the chosen level.
+ * - Walks to nearby dropped items when no mob is around.
  */
 public class AutoSpawnerClient implements ClientModInitializer {
 	public static final String ID = "auto_spawner_mob_attack";
@@ -51,8 +51,6 @@ public class AutoSpawnerClient implements ClientModInitializer {
 	private static boolean keysHeldByMod = false;
 	private static int tickCounter = 0;
 
-	/** Vuruşlar arası en az bu kadar tik (kılıç dolumu ~12,5 tik; sunucu gecikmesine karşı pay). */
-	private static final int MIN_ATTACK_TICKS = 15;
 	private static int ticksSinceAttack = 100;
 	private static int aimedTargetId = -1;
 
@@ -118,7 +116,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 			return;
 		}
 
-		// ---- Yemek ----
+		// ---- Eating ----
 		int food = player.getHungerManager().getFoodLevel();
 		if (eating) {
 			int slot = findFoodSlot(player);
@@ -150,13 +148,13 @@ public class AutoSpawnerClient implements ClientModInitializer {
 			return;
 		}
 
-		// ---- Kılıç ----
+		// ---- Sword ----
 		int swordSlot = findSwordSlot(player);
 		if (swordSlot >= 0 && player.getInventory().getSelectedSlot() != swordSlot) {
 			player.getInventory().setSelectedSlot(swordSlot);
 		}
 
-		// ---- Eşya toplama dönemi: her 100 tikte (5 sn) ilk 40 tik (2 sn) ----
+		// ---- Pickup phase: the first 40 of every 100 ticks (2 s of every 5 s) ----
 		if (cfg.pickup && tickCounter % 100 < 40) {
 			ItemEntity drop = findItem(client, cfg);
 			if (drop != null) {
@@ -168,13 +166,13 @@ public class AutoSpawnerClient implements ClientModInitializer {
 			}
 		}
 
-		// ---- Hedef ----
+		// ---- Target ----
 		LivingEntity target = findTarget(client, cfg);
 		if (target != null) {
 			lookAt(player, target.getEntityPos().add(0, target.getHeight() * 0.5, 0));
 			double dist = horizontalDistance(player, target);
 
-			// Önceki tikte de bu hedefe bakıyorsak bakış sunucuya ulaşmıştır
+			// If we already looked at this target last tick, the server has received the rotation
 			boolean alreadyAimed = (aimedTargetId == target.getId());
 			aimedTargetId = target.getId();
 
@@ -195,7 +193,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 
 		aimedTargetId = -1;
 
-		// ---- Eşya toplama ----
+		// ---- Item pickup ----
 		if (cfg.pickup) {
 			ItemEntity item = findItem(client, cfg);
 			if (item != null) {
@@ -229,7 +227,6 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		return list.stream().min(Comparator.comparingDouble(player::squaredDistanceTo)).orElse(null);
 	}
 
-	/** First hotbar slot holding a selected food, or -1. */
 	private static boolean inventoryFull(PlayerEntity player) {
 		for (int i = 0; i < 36; i++) {
 			if (player.getInventory().getStack(i).isEmpty()) {
@@ -239,13 +236,31 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		return true;
 	}
 
+	/** Best sword in the hotbar (netherite > diamond > iron > stone > golden > wooden), or -1. */
 	private static int findSwordSlot(PlayerEntity player) {
+		int best = -1;
+		int bestRank = -1;
 		for (int slot = 0; slot < 9; slot++) {
-			if (player.getInventory().getStack(slot).isIn(ItemTags.SWORDS)) {
-				return slot;
+			var stack = player.getInventory().getStack(slot);
+			if (stack.isIn(ItemTags.SWORDS)) {
+				int rank = swordRank(Registries.ITEM.getId(stack.getItem()).getPath());
+				if (rank > bestRank) {
+					best = slot;
+					bestRank = rank;
+				}
 			}
 		}
-		return -1;
+		return best;
+	}
+
+	private static int swordRank(String path) {
+		if (path.startsWith("netherite")) return 6;
+		if (path.startsWith("diamond")) return 5;
+		if (path.startsWith("iron")) return 4;
+		if (path.startsWith("copper")) return 3;
+		if (path.startsWith("stone")) return 3;
+		if (path.startsWith("golden")) return 2;
+		return 1;
 	}
 
 	/** Slot to hold after eating: the sword if there is one, otherwise the slot held before eating. */
@@ -254,6 +269,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		return sword >= 0 ? sword : prevSlot;
 	}
 
+	/** First hotbar slot holding a selected food, or -1. */
 	private static int findFoodSlot(PlayerEntity player) {
 		Config cfg = Config.get();
 		for (int slot : FOOD_SLOTS) {
@@ -265,7 +281,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		return -1;
 	}
 
-	public static int carrotsLeft() {
+	public static int foodLeft() {
 		MinecraftClient client = MinecraftClient.getInstance();
 		if (client.player == null) return 0;
 		Config cfg = Config.get();
@@ -309,7 +325,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		}
 	}
 
-	/** Modun bastığı tuşları bırakır. */
+	/** Releases the keys the mod is holding down. */
 	private static void releaseKeys(MinecraftClient client) {
 		if (keysHeldByMod || eating) {
 			client.options.forwardKey.setPressed(false);
