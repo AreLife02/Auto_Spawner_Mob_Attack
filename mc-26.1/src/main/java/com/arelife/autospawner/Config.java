@@ -31,6 +31,10 @@ public class Config {
 	public int hungerThreshold = 14;
 	/** Pick up dropped items. */
 	public boolean pickup = true;
+	/** Show the info panel while the mod is on. */
+	public boolean hudEnabled = true;
+	/** HUD corner: 0 top left, 1 top right, 2 bottom left, 3 bottom right. */
+	public int hudCorner = 1;
 	/** Turn the mod off when health is at or below this (half hearts). 0 = off. */
 	public int minHealth = 6;
 	/** Turn the mod off when the sword is about to break. */
@@ -85,6 +89,7 @@ public class Config {
 		attackDistance = Math.max(0.5, Math.min(3.0, attackDistance));
 		hungerThreshold = Math.max(1, Math.min(19, hungerThreshold));
 		minHealth = Math.max(0, Math.min(19, minHealth));
+		hudCorner = Math.max(0, Math.min(3, hudCorner));
 		attackIntervalTicks = Math.max(1, Math.min(40, attackIntervalTicks));
 	}
 

@@ -35,7 +35,7 @@ public class MenuScreen extends Screen {
 	private static final int RED = 0xFFFF5555;
 
 	private static final int W = 340;
-	private static final int H = 310;
+	private static final int H = 340;
 	private static final int ROW_H = 20;
 
 	private static List<EntityType<?>> ALL_MOBS;
@@ -251,6 +251,17 @@ public class MenuScreen extends Screen {
 		toggleRow(ctx, y + 140, "Pick up items", cfg.pickup);
 		toggleRow(ctx, y + 192, "Stop if sword is about to break", cfg.stopOnLowDurability);
 		toggleRow(ctx, y + 218, "Stop when inventory is full", cfg.stopOnFullInventory);
+		toggleRow(ctx, y + 244, "Show info panel (HUD)", cfg.hudEnabled);
+		ctx.text(font, "HUD corner", px + 14, y + 276, TEXT, false);
+		String[] corners = {"Top left", "Top right", "Bottom left", "Bottom right"};
+		for (int i = 0; i < 4; i++) {
+			int cx = px + 110 + i * 56;
+			boolean sel = cfg.hudCorner == i;
+			boolean hov = inside(mx, my, cx, y + 270, 53, 20);
+			ctx.fill(cx, y + 270, cx + 53, y + 290, sel ? ACCENT : (hov ? HOVER : PANEL_LIGHT));
+			String label = corners[i].replace("Bottom ", "B. ").replace("Top ", "T. ");
+			ctx.text(font, label, cx + 26 - font.width(label) / 2, y + 276, sel ? 0xFF111111 : TEXT, false);
+		}
 	}
 
 	private void toggleRow(GuiGraphicsExtractor ctx, int ry, String label, boolean on) {
@@ -383,27 +394,57 @@ public class MenuScreen extends Screen {
 		String[][] cards = {
 				{"State", AutoSpawnerClient.enabled ? "ON" : "OFF"},
 				{"Hits", String.valueOf(AutoSpawnerClient.attackCount)},
-				{"Food left", String.valueOf(AutoSpawnerClient.foodLeft())},
+				{"Kills", String.valueOf(Stats.totalKills())},
 				{"Running time", AutoSpawnerClient.uptimeText()},
-				{"Selected mobs", String.valueOf(cfg.mobs.size())},
-				{"Selected foods", String.valueOf(cfg.foods.size())},
+				{"Food left", String.valueOf(AutoSpawnerClient.foodLeft())},
+				{"Sword durability", AutoSpawnerClient.swordText()},
 		};
 		int cw = (W - 30) / 2;
 		for (int i = 0; i < cards.length; i++) {
 			int cx = px + 10 + (i % 2) * (cw + 10);
-			int cy = y + (i / 2) * 46;
-			ctx.fill(cx, cy, cx + cw, cy + 40, PANEL_LIGHT);
-			ctx.fill(cx, cy, cx + 2, cy + 40, ACCENT);
-			ctx.text(font, cards[i][0], cx + 10, cy + 7, TEXT_DIM, false);
+			int cy = y + (i / 2) * 36;
+			ctx.fill(cx, cy, cx + cw, cy + 32, PANEL_LIGHT);
+			ctx.fill(cx, cy, cx + 2, cy + 32, ACCENT);
+			ctx.text(font, cards[i][0], cx + 10, cy + 5, TEXT_DIM, false);
 			int color = i == 0 ? (AutoSpawnerClient.enabled ? GREEN : RED) : TEXT;
-			ctx.text(font, cards[i][1], cx + 10, cy + 22, color, false);
+			ctx.text(font, cards[i][1], cx + 10, cy + 18, color, false);
 		}
 
-		int bx = px + 10, by = y + 3 * 46 + 4, bw = W - 20;
+		int by = y + 3 * 36 + 4;
+		int bx = px + 10;
+		int bw = (W - 30) / 2;
 		boolean hover = inside(mx, my, bx, by, bw, 24);
 		ctx.fill(bx, by, bx + bw, by + 24, hover ? ACCENT : ACCENT_DIM);
-		ctx.text(font, AutoSpawnerClient.enabled ? "Turn off" : "Turn on", bx + bw / 2 - font.width(AutoSpawnerClient.enabled ? "Turn off" : "Turn on") / 2, by + 8, TEXT, false);
+		String toggle = AutoSpawnerClient.enabled ? "Turn off" : "Turn on";
+		ctx.text(font, toggle, bx + bw / 2 - font.width(toggle) / 2, by + 8, TEXT, false);
+		boolean hover2 = inside(mx, my, bx + bw + 10, by, bw, 24);
+		ctx.fill(bx + bw + 10, by, bx + 2 * bw + 10, by + 24, hover2 ? HOVER : PANEL_LIGHT);
+		ctx.text(font, "Reset stats", bx + bw + 10 + bw / 2 - font.width("Reset stats") / 2, by + 8, TEXT, false);
+
+		int ty = by + 32;
+		statsTable(ctx, px + 10, ty, cw, "Kills", Stats.kills);
+		statsTable(ctx, px + 20 + cw, ty, cw, "Items collected", Stats.items);
 	}
+
+	private void statsTable(GuiGraphicsExtractor ctx, int x, int y, int w, String title, java.util.Map<String, Integer> map) {
+		ctx.text(font, title, x, y, ACCENT, false);
+		int row = 0;
+		for (java.util.Map.Entry<String, Integer> e : Stats.top(map, 6)) {
+			String name = Stats.names.getOrDefault(e.getKey(), e.getKey());
+			String right = e.getValue() + " (" + Stats.perHour(e.getValue()) + ")";
+			int max = w - font.width(right) - 8;
+			while (name.length() > 3 && font.width(name) > max) {
+				name = name.substring(0, name.length() - 1);
+			}
+			ctx.text(font, name, x, y + 12 + row * 11, TEXT, false);
+			ctx.text(font, right, x + w - font.width(right), y + 12 + row * 11, TEXT_DIM, false);
+			row++;
+		}
+		if (row == 0) {
+			ctx.text(font, "-", x, y + 12, TEXT_DIM, false);
+		}
+	}
+
 
 	// ------------------------------------------------------------ input
 
@@ -472,9 +513,18 @@ public class MenuScreen extends Screen {
 			if (inside(mx, my, px + 10, y + 140, W - 20, 20)) { cfg.pickup = !cfg.pickup; cfg.save(); return true; }
 			if (inside(mx, my, px + 10, y + 192, W - 20, 20)) { cfg.stopOnLowDurability = !cfg.stopOnLowDurability; cfg.save(); return true; }
 			if (inside(mx, my, px + 10, y + 218, W - 20, 20)) { cfg.stopOnFullInventory = !cfg.stopOnFullInventory; cfg.save(); return true; }
+			if (inside(mx, my, px + 10, y + 244, W - 20, 20)) { cfg.hudEnabled = !cfg.hudEnabled; cfg.save(); return true; }
+			for (int i = 0; i < 4; i++) {
+				if (inside(mx, my, px + 110 + i * 56, y + 270, 53, 20)) { cfg.hudCorner = i; cfg.save(); return true; }
+			}
 		} else {
-			int bx = px + 10, by = py + 58 + 3 * 46 + 4;
-			if (inside(mx, my, bx, by, W - 20, 24)) {
+			int bx = px + 10, by = py + 58 + 3 * 36 + 4;
+			int bw = (W - 30) / 2;
+			if (inside(mx, my, bx + bw + 10, by, bw, 24)) {
+				Stats.reset();
+				return true;
+			}
+			if (inside(mx, my, bx, by, bw, 24)) {
 				AutoSpawnerClient.enabled = !AutoSpawnerClient.enabled;
 				return true;
 			}

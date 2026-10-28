@@ -4,6 +4,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
@@ -64,6 +65,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		menuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
 				"key." + ID + ".menu", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_K, CATEGORY));
 
+		HudRenderCallback.EVENT.register((ctx, tickCounter) -> Hud.render(ctx));
 		ClientTickEvents.END_CLIENT_TICK.register(this::onTick);
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			enabled = false;
@@ -92,6 +94,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 			return;
 		}
 		tickCounter++;
+		Stats.tick(client);
 		if (ticksSinceAttack < 1000) ticksSinceAttack++;
 		if (tickCounter % 20 == 0 && !eating) {
 			client.player.sendMessage(statusText(), true);
@@ -190,6 +193,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 				client.interactionManager.attackEntity(player, target);
 				player.swingHand(Hand.MAIN_HAND);
 				attackCount++;
+				Stats.onHit(target);
 				ticksSinceAttack = 0;
 			}
 			return;
@@ -283,6 +287,16 @@ public class AutoSpawnerClient implements ClientModInitializer {
 			}
 		}
 		return -1;
+	}
+
+	public static String swordText() {
+		MinecraftClient client = MinecraftClient.getInstance();
+		if (client.player == null) return "-";
+		int slot = findSwordSlot(client.player);
+		if (slot < 0) return "-";
+		var stack = client.player.getInventory().getStack(slot);
+		if (stack.getMaxDamage() <= 0) return "-";
+		return (stack.getMaxDamage() - stack.getDamage()) + "/" + stack.getMaxDamage();
 	}
 
 	public static String uptimeText() {

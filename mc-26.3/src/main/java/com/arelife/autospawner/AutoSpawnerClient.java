@@ -5,6 +5,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -64,6 +65,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		menuKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 				"key." + ID + ".menu", InputConstants.KEY_K, CATEGORY));
 
+		HudRenderCallback.EVENT.register((ctx, tickCounter) -> Hud.render(ctx));
 		ClientTickEvents.END_CLIENT_TICK.register(this::onTick);
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			enabled = false;
@@ -92,6 +94,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 			return;
 		}
 		tickCounter++;
+		Stats.tick(client);
 		if (ticksSinceAttack < 1000) ticksSinceAttack++;
 		if (tickCounter % 20 == 0 && !eating) {
 			client.player.sendOverlayMessage(statusText());
@@ -190,6 +193,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 				client.gameMode.attack(player, target);
 				player.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT, false);
 				attackCount++;
+				Stats.onHit(target);
 				ticksSinceAttack = 0;
 			}
 			return;
@@ -283,6 +287,16 @@ public class AutoSpawnerClient implements ClientModInitializer {
 			}
 		}
 		return -1;
+	}
+
+	public static String swordText() {
+		Minecraft client = Minecraft.getInstance();
+		if (client.player == null) return "-";
+		int slot = findSwordSlot(client.player);
+		if (slot < 0) return "-";
+		var stack = client.player.getInventory().getItem(slot);
+		if (stack.getMaxDamage() <= 0) return "-";
+		return (stack.getMaxDamage() - stack.getDamageValue()) + "/" + stack.getMaxDamage();
 	}
 
 	public static String uptimeText() {
