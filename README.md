@@ -1,5 +1,7 @@
 # Auto Spawner Mob Attack
 
+<img src="icon.png" alt="Auto Spawner Mob Attack icon" width="128" align="right">
+
 A client-side Fabric mod for spawner farms. It stands where you put it, hits the mobs you pick, eats when hungry and picks up drops.
 
 > **Use it only on servers that allow it.** Automatic attacking breaks the rules on many servers. Ask the server staff first.

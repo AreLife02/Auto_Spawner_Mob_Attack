@@ -6,6 +6,7 @@
 - Menu: sliders instead of +/- buttons (mouse wheel works on them), scroll bars on the lists, lists no longer jump when you select an entry, version and ON/OFF badge in the title, status cards.
 - The best sword in the hotbar is used (netherite > diamond > iron > stone > golden > wooden).
 - Code cleanup, English comments.
+- Added a mod icon (shown in the mod list).
 
 ## 1.1.0
 - Builds for 12 Minecraft versions: 1.20.4, 1.20.6, 1.21.1, 1.21.3, 1.21.4, 1.21.5, 1.21.8, 1.21.10, 1.21.11, 26.1.2, 26.2 and 26.3.

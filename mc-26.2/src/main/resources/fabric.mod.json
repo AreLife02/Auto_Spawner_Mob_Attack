@@ -7,6 +7,7 @@
 	"authors": [
 		"AreLife02"
 	],
+	"icon": "assets/auto_spawner_mob_attack/icon.png",
 	"license": "MIT",
 	"environment": "client",
 	"entrypoints": {
