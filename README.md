@@ -10,13 +10,16 @@ A client-side Fabric mod for spawner farms. It stands where you put it, hits the
 - Picks the best sword in your hotbar by itself (netherite > diamond > iron > stone > golden > wooden).
 - Eats any selected food found in the hotbar when your hunger is at or below the level you set. Golden apples are listed but off by default.
 - Picks up nearby drops when no mob is around.
+- Shows a small info panel (HUD) with running time, hits, kills per mob and collected items. You can move it to any corner or turn it off.
 - Turns itself off when health is low, the sword is about to break, the inventory is full or the food runs out. A warning shows above the hotbar.
 
 ## Menu
 - **Mobs:** search box, spawn egg icons, on/off switches. Spawner mobs are listed first.
 - **Foods:** search box, on/off switches. Common foods are listed first, bad foods are hidden. All foods start selected.
-- **Settings:** search range, attack distance, attack interval, hunger bar, item pickup and the safety stops.
-- **Status:** on/off button, hit counter, food left.
+- **Settings:** sliders for search range, attack distance, attack interval, hunger level and health stop, the item pickup switch, the safety stops and the HUD options.
+- **Status:** cards with state, hits, kills, running time, food and sword durability, on/off button, per-mob kill table and collected-item table with per-hour rates, and a reset button.
+
+Kills are counted when a mob you hit reaches 0 health. Items are counted when the item count in your inventory goes up while the mod is on, so items you pick up by hand are counted too. Statistics reset when you restart the game.
 
 Settings are saved to `config/auto_spawner_mob_attack.json`.
 
