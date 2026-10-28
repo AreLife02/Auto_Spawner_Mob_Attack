@@ -5,7 +5,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -64,7 +64,7 @@ public class AutoSpawnerClient implements ClientModInitializer {
 		menuKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 				"key." + ID + ".menu", InputConstants.KEY_K, CATEGORY));
 
-		HudRenderCallback.EVENT.register((ctx, tickCounter) -> Hud.render(ctx));
+		HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(ID, "hud"), (ctx, tickCounter) -> Hud.render(ctx));
 		ClientTickEvents.END_CLIENT_TICK.register(this::onTick);
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			enabled = false;

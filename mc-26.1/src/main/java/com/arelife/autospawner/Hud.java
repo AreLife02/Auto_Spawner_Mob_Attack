@@ -42,7 +42,7 @@ public final class Hud {
 		int width = 0;
 		int height = 8;
 		for (Row r : rows) {
-			width = Math.max(width, mc.font.getWidth(r.text()) + (r.icon() != null ? 18 : 0));
+			width = Math.max(width, mc.font.width(r.text()) + (r.icon() != null ? 18 : 0));
 			height += r.icon() != null ? 17 : 11;
 		}
 		width += 12;
